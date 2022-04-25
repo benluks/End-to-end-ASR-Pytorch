@@ -45,7 +45,7 @@ paras = parser.parse_args()
 setattr(paras, 'gpu', not paras.cpu)
 setattr(paras, 'pin_memory', not paras.no_pin)
 setattr(paras, 'verbose', not paras.no_msg)
-config = yaml.load(open(paras.config, 'r'), Loader=yaml.FullLoader)
+config = yaml.load(open(paras.config, 'r'))
 
 np.random.seed(paras.seed)
 torch.manual_seed(paras.seed)
