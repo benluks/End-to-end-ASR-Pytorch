@@ -141,7 +141,7 @@ class RNNLayer(nn.Module):
         # Perform Downsampling
         if self.sample_rate > 1:
             batch_size, timestep, feature_dim = output.shape
-            x_len = torch.div(x_len, self.sample_rate, rounding_mode=floor) 
+            x_len = x_len//self.sample_rate
 
             if self.sample_style == 'drop':
                 # Drop the unselected timesteps
