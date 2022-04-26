@@ -105,7 +105,6 @@ class ExtractAudioFeature(nn.Module):
                             num_mel_bins=self.num_mel_bins,
                             channel=-1,
                             sample_frequency=sample_rate,
-                            use_energy=self.use_energy
                             **self.kwargs)
         return y.transpose(0, 1).unsqueeze(0).detach()
 
