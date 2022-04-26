@@ -33,26 +33,18 @@ class LibriDataset(Dataset):
 
         # List all wave files
         file_list = []
-        
-        print(f"Collecting files names from data paths...")
         for s in split:
             split_list = list(Path(join(path, s)).rglob("*.flac"))
             assert len(split_list) > 0, "No data found @ {}".format(join(path,s))
             file_list += split_list
         # Read text
-
-        print(f"Reading transcriptions of files...")
         text = Parallel(n_jobs=READ_FILE_THREADS)(
             delayed(read_text)(str(f)) for f in file_list)
         #text = Parallel(n_jobs=-1)(delayed(tokenizer.encode)(txt) for txt in text)
-
-        print("tokenizing text...")
         text = [tokenizer.encode(txt) for txt in text]
 
         # Sort dataset by text length
         #file_len = Parallel(n_jobs=READ_FILE_THREADS)(delayed(getsize)(f) for f in file_list)
-        
-        print("Sorting dataset by text length...")
         self.file_list, self.text = zip(*[(f_name, txt)
                                           for f_name, txt in sorted(zip(file_list, text), reverse=not ascending, key=lambda x:len(x[1]))])
 
