@@ -34,12 +34,7 @@ class LibriDataset(Dataset):
         # List all wave files
         file_list = []
         for s in split:
-            
-            # cap file length at 100
-            if len(file_list) >= 100:
-                break
-            
-            split_list = list(Path(join(path, s)).rglob("*.flac"))
+            split_list = list(Path(join(path, s)).rglob("*.flac"))[:100]
             assert len(split_list) > 0, "No data found @ {}".format(join(path,s))
             file_list += split_list
         # Read text
