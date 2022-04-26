@@ -117,6 +117,10 @@ def create_transform(audio_config):
     feat_type = audio_config.pop("feat_type")
     feat_dim = audio_config.pop("feat_dim")
 
+    if "use_energy" in audio_config:
+        use_energy = audio_config.pop("use_energy")
+        feat_dim += 1 if use_energy else 0
+
     delta_order = audio_config.pop("delta_order", 0)
     delta_window_size = audio_config.pop("delta_window_size", 2)
     apply_cmvn = audio_config.pop("apply_cmvn")
