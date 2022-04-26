@@ -67,7 +67,7 @@ class BaseSolver():
 
             # Load training config to get acoustic feat, text encoder and build model
             self.src_config = yaml.load(
-                open(config['src']['config'], 'r'), Loader=yaml.FullLoader)
+                open(config['src']['config'], 'r'))
             self.paras.load = config['src']['ckpt']
 
             self.verbose('Evaluating result of tr. config @ {}'.format(
