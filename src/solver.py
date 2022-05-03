@@ -167,12 +167,12 @@ class BaseSolver():
             "global_step": self.step,
         }
 
-        assert len(metric) == len(score), \
-            f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
-
         metric = [metric] if not isinstance(metric, list) else metric
         score = [score] if not isinstance(score, list) else score
         
+        assert len(metric) == len(score), \
+            f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
+
         for m, s in zip(metric, score):
             full_dict[m] = s
 
