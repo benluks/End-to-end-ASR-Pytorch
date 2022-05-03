@@ -197,7 +197,7 @@ class Solver(BaseSolver):
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
                 dev_cer['ctc'].append(cal_er(self.tokenizer, ctc_output, txt, mode='cer', ctc=True))
 
-            dev_wer['att'].append(cal_er(self.tokenizer, att_output, txt, mode=self.error_mode))
+            dev_wer['att'].append(cal_er(self.tokenizer, att_output, txt))
             dev_wer['ctc'].append(cal_er(self.tokenizer, ctc_output, txt, ctc=True))
 
             # Show some example on tensorboard
