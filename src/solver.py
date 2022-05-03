@@ -166,13 +166,16 @@ class BaseSolver():
             "optimizer": self.optimizer.get_opt_state_dict(),
             "global_step": self.step,
         }
-        metric = [metric] if not isinstance(metric, list) else metric
-        score = [score] if not isinstance(score, list) else score
-        for m, s in zip(metric, score):
-            full_dict[m] = s
 
         assert len(metric) == len(score), \
             f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
+
+        metric = [metric] if not isinstance(metric, list) else metric
+        score = [score] if not isinstance(score, list) else score
+        
+        for m, s in zip(metric, score):
+            full_dict[m] = s
+
         # Additional modules to save
         # if self.amp:
         #    full_dict['amp'] = self.amp_lib.state_dict()

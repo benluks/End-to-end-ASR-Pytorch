@@ -240,7 +240,7 @@ class Solver(BaseSolver):
             metric += ['cer']
             score += [dev_cer['att']]
         
-        self.save_checkpoint('latest.pth', 'wer', dev_wer['att'], show_msg=False)
+        self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
         # Resume training
         self.model.train()
