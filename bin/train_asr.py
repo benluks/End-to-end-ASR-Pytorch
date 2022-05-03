@@ -13,7 +13,7 @@ class Solver(BaseSolver):
     def __init__(self, config, paras, mode):
         super().__init__(config, paras, mode)
         # Logger settings
-        self.use_cer = self.config['text']['mode'] == 'character'
+        self.use_cer = self.config['data']['text']['mode'] == 'character'
         if self.use_cer:
             self.best_cer = {'att': 3.0, 'ctc': 3.0}
         self.best_wer = {'att': 3.0, 'ctc': 3.0}
