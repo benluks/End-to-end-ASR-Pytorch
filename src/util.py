@@ -117,6 +117,7 @@ def cal_er(tokenizer, pred, truth, mode='wer', ctc=False):
     elif len(pred.shape) >= 3:
         pred = pred.argmax(dim=-1)
     er = []
+    # iterate through the (pred,truth) pairs in the batch
     for p, t in zip(pred, truth):
         p = tokenizer.decode(p.tolist(), ignore_repeat=ctc)
         t = tokenizer.decode(t.tolist())

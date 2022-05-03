@@ -165,8 +165,14 @@ class BaseSolver():
             "model": self.model.state_dict(),
             "optimizer": self.optimizer.get_opt_state_dict(),
             "global_step": self.step,
-            metric: score
         }
+        metric = [metric] if not isinstance(metric, list) else metric
+        score = [score] if not isinstance(score, list) else score
+        for m, s in zip(metric, score):
+            full_dict[m] = s
+
+        assert len(metric) == len(score), \
+            f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
         # Additional modules to save
         # if self.amp:
         #    full_dict['amp'] = self.amp_lib.state_dict()
@@ -175,8 +181,8 @@ class BaseSolver():
 
         torch.save(full_dict, ckpt_path)
         if show_msg:
-            self.verbose("Saved checkpoint (step = {}, {} = {:.2f}) and status @ {}".
-                         format(human_format(self.step), metric, score, ckpt_path))
+            self.verbose("Saved checkpoint (step = {}, {}) and status @ {}".
+                         format(human_format(self.step), ' '.join(['{} = {:.2f}'.format(m,s) for m,s in zip(metric,score)]), ckpt_path))
 
     def enable_apex(self):
         if self.amp:
