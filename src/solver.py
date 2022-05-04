@@ -168,12 +168,11 @@ class BaseSolver():
         }
 
         metric = [metric] if not isinstance(metric, list) else metric
+        print(f"score: {score}")
         score = [score] if not isinstance(score, list) else score
         
         assert len(metric) == len(score), \
             f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
-        
-        print(f"score: {score}")
         
         for m, s in zip(metric, score):
             full_dict[m] = s
