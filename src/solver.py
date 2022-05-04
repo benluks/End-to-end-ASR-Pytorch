@@ -172,7 +172,7 @@ class BaseSolver():
         
         assert len(metric) == len(score), \
             f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
-
+        print(f"type of score: {type(score[0])}")
         for m, s in zip(metric, score):
             full_dict[m] = s
 
@@ -185,7 +185,7 @@ class BaseSolver():
         torch.save(full_dict, ckpt_path)
         if show_msg:
             self.verbose("Saved checkpoint (step = {}, {}) and status @ {}".
-                         format(human_format(self.step), ' '.join(['{} = {:.2f}'.format(m,s) for m,s in zip(metric,score)]), ckpt_path))
+                         format(human_format(self.step), '; '.join(['{} = {:.2f}'.format(m,s) for m,s in zip(metric,score)]), ckpt_path))
 
     def enable_apex(self):
         if self.amp:
