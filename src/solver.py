@@ -168,7 +168,6 @@ class BaseSolver():
         }
 
         metric = [metric] if not isinstance(metric, list) else metric
-        print(f"score: {score}. Is it a list? {isinstance(score, list)}")
         score = [score] if not isinstance(score, list) else score
         
         assert len(metric) == len(score), \
