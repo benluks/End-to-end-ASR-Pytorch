@@ -215,30 +215,31 @@ class Solver(BaseSolver):
                         self.write_log('ctc_text{}'.format(i), self.tokenizer.decode(ctc_output[i].argmax(dim=-1).tolist(),
                                                                                      ignore_repeat=True))
 
+        # if using cer, save all models and state both metrics
+        metric = ['wer']
+        score = [dev_wer['att']]
+
         # Ckpt if performance improves
         for task in ['att', 'ctc']:
             
             if self.use_cer:
+                
+                metric += ['cer']
+                score += [dev_cer['att']]
+
                 # save new best cer if relevant
                 dev_cer[task] = sum(dev_cer[task])/len(dev_cer[task])
                 if dev_cer[task] < self.best_cer[task]:
                     self.best_cer[task] = dev_cer[task]
-                    self.save_checkpoint('best_{}.pth'.format(task), 'cer', dev_cer[task])
+                    self.save_checkpoint('best_{}.pth'.format(task), metric, score)
                 self.write_log('cer', {'dv_'+task: dev_cer[task]})
             
             # save new best wer
             dev_wer[task] = sum(dev_wer[task])/len(dev_wer[task])
             if dev_wer[task] < self.best_wer[task]:
                 self.best_wer[task] = dev_wer[task]
-                self.save_checkpoint('best_{}.pth'.format(task), 'wer', dev_wer[task])
+                self.save_checkpoint('best_{}.pth'.format(task), metric, score)
             self.write_log('wer', {'dv_'+task: dev_wer[task]})
-        
-        metric = ['wer']
-        score = [dev_wer['att']]
-        
-        if self.use_cer:
-            metric += ['cer']
-            score += [dev_cer['att']]
         
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
