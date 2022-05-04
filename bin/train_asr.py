@@ -237,7 +237,7 @@ class Solver(BaseSolver):
             # save new best wer
             metric += ['wer']
             dev_wer[task] = sum(dev_wer[task])/len(dev_wer[task])
-            score += dev_wer[task]
+            score += [dev_wer[task]]
             if dev_wer[task] < self.best_wer[task]:
                 self.best_wer[task] = dev_wer[task]
                 is_milestone = True
