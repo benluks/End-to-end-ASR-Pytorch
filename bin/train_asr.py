@@ -109,31 +109,8 @@ class Solver(BaseSolver):
                     self.model(feat, feat_len, max(txt_len), tf_rate=tf_rate,
                                teacher=txt, get_dec_state=self.emb_reg)
 
-                # Plugins
-                if self.emb_reg:
-                    emb_loss, fuse_output = self.emb_decoder(
-                        dec_state, att_output, label=txt)
-                    total_loss += self.emb_decoder.weight*emb_loss
-
-                # Compute all objectives
-                if ctc_output is not None:
-                    if self.paras.cudnn_ctc:
-                        ctc_loss = self.ctc_loss(ctc_output.transpose(0, 1),
-                                                 txt.to_sparse().values().to(device='cpu', dtype=torch.int32),
-                                                 [ctc_output.shape[1]] *
-                                                 len(ctc_output),
-                                                 txt_len.cpu().tolist())
-                    else:
-                        ctc_loss = self.ctc_loss(ctc_output.transpose(
-                            0, 1), txt, encode_len, txt_len)
-                    total_loss += ctc_loss*self.model.ctc_weight
-
-                if att_output is not None:
-                    b, t, _ = att_output.shape
-                    att_output = fuse_output if self.emb_fuse else att_output
-                    att_loss = self.seq_loss(
-                        att_output.view(b*t, -1), txt.view(-1))
-                    total_loss += att_loss*(1-self.model.ctc_weight)
+                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(emb_loss, dec_state, ctc_output, ctc_loss, 
+                                                                             txt, txt_len, encode_len, att_loss)
 
                 self.timer.cnt('fw')
 
@@ -172,6 +149,38 @@ class Solver(BaseSolver):
                     break
             n_epochs += 1
         self.log.close()
+
+
+    def compute_losses(self, emb_loss, dec_state, ctc_output, ctc_loss, txt, txt_len, encode_len, att_loss):
+        ''' Compute loss of output '''
+        total_loss = 0
+        # Plugins
+        
+        if self.emb_reg:
+            emb_loss, fuse_output = self.emb_decoder(
+                dec_state, att_output, label=txt)
+            total_loss += self.emb_decoder.weight*emb_loss
+        
+        if ctc_output is not None:
+            if self.paras.cudnn_ctc:
+                ctc_loss = self.ctc_loss(ctc_output.transpose(0, 1),
+                                            txt.to_sparse().values().to(device='cpu', dtype=torch.int32),
+                                            [ctc_output.shape[1]] *
+                                            len(ctc_output),
+                                            txt_len.cpu().tolist())
+            else:
+                ctc_loss = self.ctc_loss(ctc_output.transpose(
+                    0, 1), txt, encode_len, txt_len)
+            total_loss += ctc_loss*self.model.ctc_weight
+
+        if att_output is not None:
+            b, t, _ = att_output.shape
+            att_output = fuse_output if self.emb_fuse else att_output
+            att_loss = self.seq_loss(
+                att_output.view(b*t, -1), txt.view(-1))
+            total_loss += att_loss*(1-self.model.ctc_weight)
+        
+        return emb_loss, ctc_loss, att_loss, total_loss
 
     def validate(self):
         # Eval mode
