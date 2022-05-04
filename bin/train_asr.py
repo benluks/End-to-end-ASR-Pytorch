@@ -97,7 +97,6 @@ class Solver(BaseSolver):
             for data in self.tr_set:
                 # Pre-step : update tf_rate/lr_rate and do zero_grad
                 tf_rate = self.optimizer.pre_step(self.step)
-                total_loss = 0
 
                 # Fetch data
                 feat, feat_len, txt, txt_len = self.fetch_data(data)
@@ -181,6 +180,32 @@ class Solver(BaseSolver):
             total_loss += att_loss*(1-self.model.ctc_weight)
         
         return emb_loss, ctc_loss, att_loss, total_loss
+
+
+    def log_errors(self, att_output, ctc_output, txt, mode='tr'):
+        if self.use_cer:
+            self.write_log('cer', {f'{mode}_att': cal_er(self.tokenizer, att_output, txt, mode='cer'),
+                                   f'{mode}_ctc': cal_er(self.tokenizer, ctc_output, txt, mode='cer', ctc=True)})
+        self.write_log('wer', {f'{mode}_att': cal_er(self.tokenizer, att_output, txt),
+                               f'{mode}_ctc': cal_er(self.tokenizer, ctc_output, txt, ctc=True)})
+
+
+    def log_progress(self, total_loss, grad_norm, ctc_loss, att_loss, emb_loss, mode='tr'):
+        assert mode=='tr' or mode=='dev'
+        # mode = 'tr' or 'dev'
+        self.progress('{} stat | Loss - {:.2f} | Grad. Norm - {:.2f} | {}'
+                     .format(mode.capitalize(), total_loss.cpu().item(), grad_norm, self.timer.show()))
+        self.write_log(
+            'loss', {f'{mode}_ctc': ctc_loss, f'{mode}_att': att_loss})
+        self.write_log('emb_loss', {mode: emb_loss})
+        
+        if self.emb_fuse:
+            if self.emb_decoder.fuse_learnable:
+                self.write_log('fuse_lambda', {
+                                'emb': self.emb_decoder.get_weight()})
+            self.write_log(
+                'fuse_temp', {'temp': self.emb_decoder.get_temp()})
+        
 
     def validate(self):
         # Eval mode
