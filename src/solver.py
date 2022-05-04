@@ -172,7 +172,9 @@ class BaseSolver():
         
         assert len(metric) == len(score), \
             f"Args `metric` and `score` must be of same length. Received length {len(metric)} for metric and {len(score)} for score."
-        print(f"type of score: {type(score[0])}")
+        
+        print(f"score: {score}")
+        
         for m, s in zip(metric, score):
             full_dict[m] = s
 
