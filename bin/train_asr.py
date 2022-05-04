@@ -216,31 +216,36 @@ class Solver(BaseSolver):
                                                                                      ignore_repeat=True))
 
         # if using cer, save all models and state both metrics
-        metric = ['wer']
-        score = [dev_wer['att']]
+        metric = []
+        score = []
 
         # Ckpt if performance improves
         for task in ['att', 'ctc']:
             
-            if self.use_cer:
-                
+            is_milestone = False
+            
+            if self.use_cer:     
                 metric += ['cer']
-                score += [dev_cer['att']]
-
                 # save new best cer if relevant
                 dev_cer[task] = sum(dev_cer[task])/len(dev_cer[task])
+                score += [dev_cer[task]]
                 if dev_cer[task] < self.best_cer[task]:
                     self.best_cer[task] = dev_cer[task]
-                    self.save_checkpoint('best_{}.pth'.format(task), metric, score)
+                    is_milestone = True
                 self.write_log('cer', {'dv_'+task: dev_cer[task]})
             
             # save new best wer
+            metric += ['wer']
             dev_wer[task] = sum(dev_wer[task])/len(dev_wer[task])
+            score += dev_wer[task]
             if dev_wer[task] < self.best_wer[task]:
                 self.best_wer[task] = dev_wer[task]
-                self.save_checkpoint('best_{}.pth'.format(task), metric, score)
+                is_milestone = True
             self.write_log('wer', {'dv_'+task: dev_wer[task]})
-        
+            
+            if is_milestone:
+                self.save_checkpoint('best_{}.pth'.format(task), metric, score)
+
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
         # Resume training
