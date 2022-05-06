@@ -14,10 +14,19 @@ class Solver(BaseSolver):
         super().__init__(config, paras, mode)
         # Logger settings
         self.use_cer = self.config['data']['text']['mode'] == 'character'
+        
         if self.use_cer:
             self.best_cer = {'att': 3.0, 'ctc': 3.0}
         self.best_wer = {'att': 3.0, 'ctc': 3.0}
+
+        # enable early stopping
+        self.early_stopping = self.config['hparams']['early_stopping']
         
+        if self.early_stopping:
+            self.patience = self.config['hparams']['patience']
+            self.last_n_losses = [float('inf')] * self.patience
+            self.end_training = False
+
         # Curriculum learning affects data loader
         self.curriculum = self.config['hparas']['curriculum']
 
@@ -108,8 +117,8 @@ class Solver(BaseSolver):
                     self.model(feat, feat_len, max(txt_len), tf_rate=tf_rate,
                                teacher=txt, get_dec_state=self.emb_reg)
 
-                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(emb_loss, dec_state, ctc_output, ctc_loss, 
-                                                                             txt, txt_len, encode_len, att_loss)
+                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, txt, txt_len, 
+                                                                                encode_len, emb_loss, ctc_loss, att_loss)
 
                 self.timer.cnt('fw')
 
@@ -117,28 +126,34 @@ class Solver(BaseSolver):
                 grad_norm = self.backward(total_loss)
                 self.step += 1
 
+                
                 # Logger
                 if (self.step == 1) or (self.step % self.PROGRESS_STEP == 0):
                     self.progress('Tr stat | Loss - {:.2f} | Grad. Norm - {:.2f} | {}'
                                   .format(total_loss.cpu().item(), grad_norm, self.timer.show()))
-                    self.write_log(
-                        'loss', {'tr_ctc': ctc_loss, 'tr_att': att_loss})
-                    self.write_log('emb_loss', {'tr': emb_loss})
-                    if self.use_cer:
-                        self.write_log('cer', {'tr_att': cal_er(self.tokenizer, att_output, txt, mode='cer'),
-                                               'tr_ctc': cal_er(self.tokenizer, ctc_output, txt, mode='cer', ctc=True)})
-                    self.write_log('wer', {'tr_att': cal_er(self.tokenizer, att_output, txt),
-                                           'tr_ctc': cal_er(self.tokenizer, ctc_output, txt, ctc=True)})
-                    if self.emb_fuse:
-                        if self.emb_decoder.fuse_learnable:
-                            self.write_log('fuse_lambda', {
-                                           'emb': self.emb_decoder.get_weight()})
-                        self.write_log(
-                            'fuse_temp', {'temp': self.emb_decoder.get_temp()})
+
+                    self.log_progress(total_loss, ctc_loss, att_loss, emb_loss)
+                    self.log_errors(att_output, ctc_output, txt)
 
                 # Validation
                 if (self.step == 1) or (self.step % self.valid_step == 0):
-                    self.validate()
+                    valid_loss = self.validate()
+                    
+                    if self.early_stopping:
+                        self.last_n_losses.pop(0)
+                        self.last_n_losses.append(valid_loss)
+                        
+                        # check if loss hasn't improved for n epochs, end training
+                        if min(self.last_n_losses) == self.max_n_losses[0]:
+                            self.end_training = True
+
+                    if self.end_training:
+                        break
+
+                    # Resume training
+                    self.model.train()
+                    if self.emb_decoder is not None:
+                        self.emb_decoder.train()
 
                 # End of step
                 # https://github.com/pytorch/pytorch/issues/13246#issuecomment-529185354
@@ -147,10 +162,14 @@ class Solver(BaseSolver):
                 if self.step > self.max_step:
                     break
             n_epochs += 1
+            
+            if self.end_training:
+                break
+        
         self.log.close()
 
 
-    def compute_losses(self, emb_loss, dec_state, ctc_output, ctc_loss, txt, txt_len, encode_len, att_loss):
+    def compute_losses(self, dec_state, ctc_output, txt, txt_len, encode_len, emb_loss=None, ctc_loss=None, att_loss=None):
         ''' Compute loss of output '''
         total_loss = 0
         # Plugins
@@ -190,13 +209,11 @@ class Solver(BaseSolver):
                                f'{mode}_ctc': cal_er(self.tokenizer, ctc_output, txt, ctc=True)})
 
 
-    def log_progress(self, total_loss, grad_norm, ctc_loss, att_loss, emb_loss, mode='tr'):
+    def log_progress(self, total_loss, ctc_loss, att_loss, emb_loss, mode='tr'):
         assert mode=='tr' or mode=='dev'
         # mode = 'tr' or 'dev'
-        self.progress('{} stat | Loss - {:.2f} | Grad. Norm - {:.2f} | {}'
-                     .format(mode.capitalize(), total_loss.cpu().item(), grad_norm, self.timer.show()))
         self.write_log(
-            'loss', {f'{mode}_ctc': ctc_loss, f'{mode}_att': att_loss})
+            'loss', {f'{mode}_ctc': ctc_loss, f'{mode}_att': att_loss, f'{mode}_total': total_loss})
         self.write_log('emb_loss', {mode: emb_loss})
         
         if self.emb_fuse:
@@ -226,6 +243,10 @@ class Solver(BaseSolver):
                 ctc_output, encode_len, att_output, att_align, dec_state = \
                     self.model(feat, feat_len, int(max(txt_len)*self.DEV_STEP_RATIO),
                                emb_decoder=self.emb_decoder)
+                
+                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
+                                                                             txt, txt_len, encode_len)
+                self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
@@ -282,8 +303,8 @@ class Solver(BaseSolver):
 
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
-        # Resume training
-        self.model.train()
-        if self.emb_decoder is not None:
-            self.emb_decoder.train()
+        return total_loss
+      
+        
+        
     
