@@ -118,7 +118,7 @@ class Solver(BaseSolver):
                                teacher=txt, get_dec_state=self.emb_reg)
 
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, txt, txt_len, 
-                                                                                encode_len, emb_loss, ctc_loss, att_loss)
+                                                                                encode_len, att_output, emb_loss, ctc_loss, att_loss)
 
                 self.timer.cnt('fw')
 
@@ -171,7 +171,7 @@ class Solver(BaseSolver):
         self.log.close()
 
 
-    def compute_losses(self, dec_state, ctc_output, txt, txt_len, encode_len, emb_loss=None, ctc_loss=None, att_loss=None):
+    def compute_losses(self, dec_state, ctc_output, txt, txt_len, encode_len, att_output, emb_loss=None, ctc_loss=None, att_loss=None):
         ''' Compute loss of output '''
         total_loss = 0
         # Plugins
@@ -247,7 +247,7 @@ class Solver(BaseSolver):
                                emb_decoder=self.emb_decoder)
                 
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
-                                                                             txt, txt_len, encode_len)
+                                                                             txt, txt_len, encode_len, att_output)
                 self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
