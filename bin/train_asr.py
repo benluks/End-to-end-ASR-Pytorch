@@ -24,7 +24,7 @@ class Solver(BaseSolver):
         
         if self.early_stopping:
             self.patience = self.config['hparams']['patience']
-            self.last_n_losses = [float('inf')] * self.patience
+            self.last_n_losses = [float('inf')] * (self.patience + 1)
             self.end_training = False
 
         # Curriculum learning affects data loader
