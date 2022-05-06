@@ -164,6 +164,8 @@ class Solver(BaseSolver):
             n_epochs += 1
             
             if self.end_training:
+                self.verbose('Loss has not improved for {} validation steps, ending training with best loss = {:.2f}'
+                            .format(self.patience, min(self.last_n_losses)))
                 break
         
         self.log.close()
