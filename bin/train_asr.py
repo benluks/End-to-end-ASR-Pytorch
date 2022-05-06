@@ -20,10 +20,10 @@ class Solver(BaseSolver):
         self.best_wer = {'att': 3.0, 'ctc': 3.0}
 
         # enable early stopping
-        self.early_stopping = self.config['hparams']['early_stopping']
+        self.early_stopping = self.config['hparas']['early_stopping']
         
         if self.early_stopping:
-            self.patience = self.config['hparams']['patience']
+            self.patience = self.config['hparas']['patience']
             self.last_n_losses = [float('inf')] * (self.patience + 1)
             self.end_training = False
 
