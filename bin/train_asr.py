@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from src.solver import BaseSolver
 
 from src.asr import ASR
@@ -248,7 +249,15 @@ class Solver(BaseSolver):
                 
                 # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
                 # than target text, so target text has to be zero-padded.
-                print(txt)
+                # `txt` shape is [batch, max_len]
+
+                output_len = att_output.shape[1] # att_output is [B, T, F]
+                padding = output_len - max(txt_len)
+                
+                txt = F.pad(txt, (0, padding))
+                # print(txt)
+                print(f"text shape: {txt.shape}")
+                print(f"output shape: {txt.shape}")
 
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                              txt, txt_len, encode_len, att_output)
