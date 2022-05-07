@@ -246,7 +246,10 @@ class Solver(BaseSolver):
                     self.model(feat, feat_len, int(max(txt_len)*self.DEV_STEP_RATIO),
                                emb_decoder=self.emb_decoder)
                 
-                print(att_output.shape)
+                # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
+                # than target text, so target text has to be zero-padded.
+                print(txt)
+
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                              txt, txt_len, encode_len, att_output)
                 self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
