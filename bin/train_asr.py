@@ -117,7 +117,6 @@ class Solver(BaseSolver):
                     self.model(feat, feat_len, max(txt_len), tf_rate=tf_rate,
                                teacher=txt, get_dec_state=self.emb_reg)
 
-                print(att_output.shape)
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, txt, txt_len, 
                                                                                 encode_len, att_output, emb_loss, ctc_loss, att_loss)
 
@@ -247,6 +246,7 @@ class Solver(BaseSolver):
                     self.model(feat, feat_len, int(max(txt_len)*self.DEV_STEP_RATIO),
                                emb_decoder=self.emb_decoder)
                 
+                print(att_output.shape)
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                              txt, txt_len, encode_len, att_output)
                 self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
