@@ -145,7 +145,7 @@ class Solver(BaseSolver):
                         self.last_n_losses.append(valid_loss)
                         
                         # check if loss hasn't improved for n epochs, end training
-                        if min(self.last_n_losses) == self.max_n_losses[0]:
+                        if min(self.last_n_losses) == self.last_n_losses[0]:
                             self.end_training = True
 
                     if self.end_training:
@@ -253,11 +253,10 @@ class Solver(BaseSolver):
 
                 output_len = att_output.shape[1] # att_output is [B, T, F]
                 padding = output_len - max(txt_len)
-                
                 txt = F.pad(txt, (0, padding))
                 # print(txt)
                 print(f"text shape: {txt.shape}")
-                print(f"output shape: {txt.shape}")
+                print(f"output shape: {att_output.shape}")
 
                 emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                              txt, txt_len, encode_len, att_output)
