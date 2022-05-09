@@ -270,7 +270,7 @@ class Solver(BaseSolver):
             if i == len(self.dv_set)//2:
                 print("made it here")
                 print(self.tokenizer.decode(
-                            att_output[i].argmax(dim=-1).tolist()))
+                            att_output[0].argmax(dim=-1).tolist()))
                 exit()
                 print(self.tokenizer.decode(
                             att_output[0].argmax(dim=-1).tolist()))
