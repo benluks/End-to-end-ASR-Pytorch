@@ -254,9 +254,6 @@ class Solver(BaseSolver):
             output_len = att_output.shape[1] # att_output is [B, T, F]
             padding = output_len - max(txt_len)
             txt = F.pad(txt, (0, padding))
-            # print(txt)
-            print(f"text shape: {txt.shape}")
-            print(f"output shape: {att_output.shape}")
 
             emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                             txt, txt_len, encode_len, att_output)
@@ -268,9 +265,11 @@ class Solver(BaseSolver):
 
             dev_wer['att'].append(cal_er(self.tokenizer, att_output, txt))
             dev_wer['ctc'].append(cal_er(self.tokenizer, ctc_output, txt, ctc=True))
-
+            
             # Show some example on tensorboard
             if i == len(self.dv_set)//2:
+                print(self.tokenizer.decode(
+                            att_output[0].argmax(dim=-1).tolist()))
                 for i in range(min(len(txt), self.DEV_N_EXAMPLE)):
                     if self.step == 1:
                         self.write_log('true_text{}'.format(
