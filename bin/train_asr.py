@@ -267,8 +267,8 @@ class Solver(BaseSolver):
             dev_wer['ctc'].append(cal_er(self.tokenizer, ctc_output, txt, ctc=True))
             
             # Show some example on tensorboard
-            print("made it here")
             if i == len(self.dv_set)//2:
+                print("made it here")
                 print(self.tokenizer.decode(
                             att_output[0].argmax(dim=-1).tolist()))
                 for i in range(min(len(txt), self.DEV_N_EXAMPLE)):
