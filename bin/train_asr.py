@@ -246,21 +246,21 @@ class Solver(BaseSolver):
                 ctc_output, encode_len, att_output, att_align, dec_state = \
                     self.model(feat, feat_len, int(max(txt_len)*self.DEV_STEP_RATIO),
                                emb_decoder=self.emb_decoder)
-                
-                # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
-                # than target text, so target text has to be zero-padded.
-                # `txt` shape is [batch, max_len]
+            
+            # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
+            # than target text, so target text has to be zero-padded.
+            # `txt` shape is [batch, max_len]
 
-                output_len = att_output.shape[1] # att_output is [B, T, F]
-                padding = output_len - max(txt_len)
-                txt = F.pad(txt, (0, padding))
-                # print(txt)
-                print(f"text shape: {txt.shape}")
-                print(f"output shape: {att_output.shape}")
+            output_len = att_output.shape[1] # att_output is [B, T, F]
+            padding = output_len - max(txt_len)
+            txt = F.pad(txt, (0, padding))
+            # print(txt)
+            print(f"text shape: {txt.shape}")
+            print(f"output shape: {att_output.shape}")
 
-                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
-                                                                             txt, txt_len, encode_len, att_output)
-                self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
+            emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
+                                                                            txt, txt_len, encode_len, att_output)
+            self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
