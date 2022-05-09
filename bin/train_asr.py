@@ -269,7 +269,7 @@ class Solver(BaseSolver):
             # Show some example on tensorboard
             if i == len(self.dv_set)//2:
                 print("att_output shape")
-                print(att_output.shape)
+                print(att_output[0].argmax(dim=-1))
         
                 for i in range(min(len(txt), self.DEV_N_EXAMPLE)):
                     if self.step == 1:
