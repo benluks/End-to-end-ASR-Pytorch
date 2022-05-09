@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from src.solver import BaseSolver
 
 from src.asr import ASR
@@ -14,10 +15,19 @@ class Solver(BaseSolver):
         super().__init__(config, paras, mode)
         # Logger settings
         self.use_cer = self.config['data']['text']['mode'] == 'character'
+        
         if self.use_cer:
             self.best_cer = {'att': 3.0, 'ctc': 3.0}
         self.best_wer = {'att': 3.0, 'ctc': 3.0}
+
+        # enable early stopping
+        self.early_stopping = self.config['hparas']['early_stopping']
         
+        if self.early_stopping:
+            self.patience = self.config['hparas']['patience']
+            self.last_n_losses = [float('inf')] * (self.patience + 1)
+            self.end_training = False
+
         # Curriculum learning affects data loader
         self.curriculum = self.config['hparas']['curriculum']
 
@@ -97,7 +107,6 @@ class Solver(BaseSolver):
             for data in self.tr_set:
                 # Pre-step : update tf_rate/lr_rate and do zero_grad
                 tf_rate = self.optimizer.pre_step(self.step)
-                total_loss = 0
 
                 # Fetch data
                 feat, feat_len, txt, txt_len = self.fetch_data(data)
@@ -109,31 +118,8 @@ class Solver(BaseSolver):
                     self.model(feat, feat_len, max(txt_len), tf_rate=tf_rate,
                                teacher=txt, get_dec_state=self.emb_reg)
 
-                # Plugins
-                if self.emb_reg:
-                    emb_loss, fuse_output = self.emb_decoder(
-                        dec_state, att_output, label=txt)
-                    total_loss += self.emb_decoder.weight*emb_loss
-
-                # Compute all objectives
-                if ctc_output is not None:
-                    if self.paras.cudnn_ctc:
-                        ctc_loss = self.ctc_loss(ctc_output.transpose(0, 1),
-                                                 txt.to_sparse().values().to(device='cpu', dtype=torch.int32),
-                                                 [ctc_output.shape[1]] *
-                                                 len(ctc_output),
-                                                 txt_len.cpu().tolist())
-                    else:
-                        ctc_loss = self.ctc_loss(ctc_output.transpose(
-                            0, 1), txt, encode_len, txt_len)
-                    total_loss += ctc_loss*self.model.ctc_weight
-
-                if att_output is not None:
-                    b, t, _ = att_output.shape
-                    att_output = fuse_output if self.emb_fuse else att_output
-                    att_loss = self.seq_loss(
-                        att_output.view(b*t, -1), txt.view(-1))
-                    total_loss += att_loss*(1-self.model.ctc_weight)
+                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, txt, txt_len, 
+                                                                                encode_len, att_output, emb_loss, ctc_loss, att_loss)
 
                 self.timer.cnt('fw')
 
@@ -141,28 +127,34 @@ class Solver(BaseSolver):
                 grad_norm = self.backward(total_loss)
                 self.step += 1
 
+                
                 # Logger
                 if (self.step == 1) or (self.step % self.PROGRESS_STEP == 0):
                     self.progress('Tr stat | Loss - {:.2f} | Grad. Norm - {:.2f} | {}'
                                   .format(total_loss.cpu().item(), grad_norm, self.timer.show()))
-                    self.write_log(
-                        'loss', {'tr_ctc': ctc_loss, 'tr_att': att_loss})
-                    self.write_log('emb_loss', {'tr': emb_loss})
-                    if self.use_cer:
-                        self.write_log('cer', {'tr_att': cal_er(self.tokenizer, att_output, txt, mode='cer'),
-                                               'tr_ctc': cal_er(self.tokenizer, ctc_output, txt, mode='cer', ctc=True)})
-                    self.write_log('wer', {'tr_att': cal_er(self.tokenizer, att_output, txt),
-                                           'tr_ctc': cal_er(self.tokenizer, ctc_output, txt, ctc=True)})
-                    if self.emb_fuse:
-                        if self.emb_decoder.fuse_learnable:
-                            self.write_log('fuse_lambda', {
-                                           'emb': self.emb_decoder.get_weight()})
-                        self.write_log(
-                            'fuse_temp', {'temp': self.emb_decoder.get_temp()})
+
+                    self.log_progress(total_loss, ctc_loss, att_loss, emb_loss)
+                    self.log_errors(att_output, ctc_output, txt)
 
                 # Validation
                 if (self.step == 1) or (self.step % self.valid_step == 0):
-                    self.validate()
+                    valid_loss = self.validate()
+                    
+                    if self.early_stopping:
+                        self.last_n_losses.pop(0)
+                        self.last_n_losses.append(valid_loss)
+                        
+                        # check if loss hasn't improved for n epochs, end training
+                        if min(self.last_n_losses) == self.last_n_losses[0]:
+                            self.end_training = True
+
+                    if self.end_training:
+                        break
+
+                    # Resume training
+                    self.model.train()
+                    if self.emb_decoder is not None:
+                        self.emb_decoder.train()
 
                 # End of step
                 # https://github.com/pytorch/pytorch/issues/13246#issuecomment-529185354
@@ -171,7 +163,69 @@ class Solver(BaseSolver):
                 if self.step > self.max_step:
                     break
             n_epochs += 1
+            
+            if self.end_training:
+                self.verbose('Loss has not improved for {} validation steps, ending training with best loss = {:.2f}'
+                            .format(self.patience, min(self.last_n_losses)))
+                break
+        
         self.log.close()
+
+
+    def compute_losses(self, dec_state, ctc_output, txt, txt_len, encode_len, att_output, emb_loss=None, ctc_loss=None, att_loss=None):
+        ''' Compute loss of output '''
+        total_loss = 0
+        # Plugins
+        
+        if self.emb_reg:
+            emb_loss, fuse_output = self.emb_decoder(
+                dec_state, att_output, label=txt)
+            total_loss += self.emb_decoder.weight*emb_loss
+        
+        if ctc_output is not None:
+            if self.paras.cudnn_ctc:
+                ctc_loss = self.ctc_loss(ctc_output.transpose(0, 1),
+                                            txt.to_sparse().values().to(device='cpu', dtype=torch.int32),
+                                            [ctc_output.shape[1]] *
+                                            len(ctc_output),
+                                            txt_len.cpu().tolist())
+            else:
+                ctc_loss = self.ctc_loss(ctc_output.transpose(
+                    0, 1), txt, encode_len, txt_len)
+            total_loss += ctc_loss*self.model.ctc_weight
+
+        if att_output is not None:
+            b, t, _ = att_output.shape
+            att_output = fuse_output if self.emb_fuse else att_output
+            att_loss = self.seq_loss(
+                att_output.view(b*t, -1), txt.view(-1))
+            total_loss += att_loss*(1-self.model.ctc_weight)
+        
+        return emb_loss, ctc_loss, att_loss, total_loss
+
+
+    def log_errors(self, att_output, ctc_output, txt, mode='tr'):
+        if self.use_cer:
+            self.write_log('cer', {f'{mode}_att': cal_er(self.tokenizer, att_output, txt, mode='cer'),
+                                   f'{mode}_ctc': cal_er(self.tokenizer, ctc_output, txt, mode='cer', ctc=True)})
+        self.write_log('wer', {f'{mode}_att': cal_er(self.tokenizer, att_output, txt),
+                               f'{mode}_ctc': cal_er(self.tokenizer, ctc_output, txt, ctc=True)})
+
+
+    def log_progress(self, total_loss, ctc_loss, att_loss, emb_loss, mode='tr'):
+        assert mode=='tr' or mode=='dev'
+        # mode = 'tr' or 'dev'
+        self.write_log(
+            'loss', {f'{mode}_ctc': ctc_loss, f'{mode}_att': att_loss, f'{mode}_total': total_loss})
+        self.write_log('emb_loss', {mode: emb_loss})
+        
+        if self.emb_fuse:
+            if self.emb_decoder.fuse_learnable:
+                self.write_log('fuse_lambda', {
+                                'emb': self.emb_decoder.get_weight()})
+            self.write_log(
+                'fuse_temp', {'temp': self.emb_decoder.get_temp()})
+        
 
     def validate(self):
         # Eval mode
@@ -192,6 +246,18 @@ class Solver(BaseSolver):
                 ctc_output, encode_len, att_output, att_align, dec_state = \
                     self.model(feat, feat_len, int(max(txt_len)*self.DEV_STEP_RATIO),
                                emb_decoder=self.emb_decoder)
+                
+                # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
+                # than target text, so target text has to be zero-padded.
+                # `txt` shape is [batch, max_len]
+
+                output_len = att_output.shape[1] # att_output is [B, T, F]
+                padding = output_len - max(txt_len)
+                txt = F.pad(txt, (0, padding))
+
+                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
+                                                                             txt, txt_len, encode_len, att_output)
+                self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
@@ -248,8 +314,8 @@ class Solver(BaseSolver):
 
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
-        # Resume training
-        self.model.train()
-        if self.emb_decoder is not None:
-            self.emb_decoder.train()
+        return total_loss
+      
+        
+        
     
