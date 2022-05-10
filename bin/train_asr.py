@@ -246,18 +246,18 @@ class Solver(BaseSolver):
                 ctc_output, encode_len, att_output, att_align, dec_state = \
                     self.model(feat, feat_len, int(max(txt_len)*self.DEV_STEP_RATIO),
                                emb_decoder=self.emb_decoder)
-                
-                # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
-                # than target text, so target text has to be zero-padded.
-                # `txt` shape is [batch, max_len]
+            
+            # the attention output is slightly longer than the texts because validating tolerates inferences that are longer
+            # than target text, so target text has to be zero-padded.
+            # `txt` shape is [batch, max_len]
 
-                output_len = att_output.shape[1] # att_output is [B, T, F]
-                padding = output_len - max(txt_len)
-                txt = F.pad(txt, (0, padding))
+            output_len = att_output.shape[1] # att_output is [B, T, F]
+            padding = output_len - max(txt_len)
+            txt = F.pad(txt, (0, padding))
 
-                emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
-                                                                             txt, txt_len, encode_len, att_output)
-                self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
+            emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
+                                                                            txt, txt_len, encode_len, att_output)
+            self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
@@ -265,7 +265,7 @@ class Solver(BaseSolver):
 
             dev_wer['att'].append(cal_er(self.tokenizer, att_output, txt))
             dev_wer['ctc'].append(cal_er(self.tokenizer, ctc_output, txt, ctc=True))
-
+            
             # Show some example on tensorboard
             if i == len(self.dv_set)//2:
                 for i in range(min(len(txt), self.DEV_N_EXAMPLE)):
