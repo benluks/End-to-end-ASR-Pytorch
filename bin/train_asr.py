@@ -323,7 +323,7 @@ class Solver(BaseSolver):
 
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
-        mean = lambda ls: sum(ls) / len(ls)
+        mean = lambda ls: (sum(ls) / len(ls)) if ls[0] else None
         self.log_progress(mean(total_loss), mean(ctc_loss), mean(att_loss), mean(emb_loss), mode='dev')
         
         return mean(total_loss)
