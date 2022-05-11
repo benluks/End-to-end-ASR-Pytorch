@@ -268,8 +268,6 @@ class Solver(BaseSolver):
 
             print(f"Here's thes loss: {att_loss}")
 
-            self.log_progress(total_loss[-1], ctc_loss[-1], att_loss[-1], emb_loss[-1], mode='dev')
-
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
                 dev_cer['ctc'].append(cal_er(self.tokenizer, ctc_output, txt, mode='cer', ctc=True))
@@ -325,8 +323,10 @@ class Solver(BaseSolver):
 
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
+        mean = lambda ls: sum(ls) / len(ls)
+        self.log_progress(mean(total_loss), mean(ctc_loss), mean(att_loss), mean(emb_loss), mode='dev')
         
-        return sum(total_loss) / len(total_loss)
+        return mean(total_loss)
       
         
         
