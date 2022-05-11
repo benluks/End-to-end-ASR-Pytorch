@@ -140,7 +140,7 @@ class Solver(BaseSolver):
                 if (self.step == 1) or (self.step % self.valid_step == 0):
                     valid_loss = self.validate()
                     
-                    print(f"Here's the mean valid loss: {valid_loss}")
+                    self.verbose(f"Validation after step {self.step} ended with loss = {valid_loss}")
 
                     if self.early_stopping:
                         self.last_n_losses.pop(0)
