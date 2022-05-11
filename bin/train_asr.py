@@ -140,7 +140,7 @@ class Solver(BaseSolver):
                 if (self.step == 1) or (self.step % self.valid_step == 0):
                     valid_loss = self.validate()
                     
-                    print(f"And here's the valid loss again: {valid_loss}")
+                    print(f"Here's the mean valid loss: {valid_loss}")
 
                     if self.early_stopping:
                         self.last_n_losses.pop(0)
@@ -238,6 +238,8 @@ class Solver(BaseSolver):
             dev_cer = {'att': [], 'ctc': []}
         dev_wer = {'att': [], 'ctc': []}
 
+        emb_loss, ctc_loss, att_loss, total_loss = [], [], [], []
+
         for i, data in enumerate(self.dv_set):
             self.progress('Valid step - {}/{}'.format(i+1, len(self.dv_set)))
             # Fetch data
@@ -257,11 +259,16 @@ class Solver(BaseSolver):
             padding = output_len - max(txt_len)
             txt = F.pad(txt, (0, padding))
 
-            emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
-                                                                            txt, txt_len, encode_len, att_output)
-            print(f"Here is the loss: {att_loss}")
+            losses = self.compute_losses(dec_state, ctc_output, txt, txt_len, encode_len, att_output)
+            
+            emb_loss += [losses[0]]
+            ctc_loss += [losses[1]]
+            att_loss += [losses[2]]
+            total_loss += [losses[3]]
 
-            self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
+            print(f"Here's thes loss: {att_loss}")
+
+            self.log_progress(total_loss[-1], ctc_loss[-1], att_loss[-1], emb_loss[-1], mode='dev')
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
@@ -319,7 +326,7 @@ class Solver(BaseSolver):
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
         
-        return total_loss
+        return sum(total_loss) / len(total_loss)
       
         
         
