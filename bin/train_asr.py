@@ -140,6 +140,8 @@ class Solver(BaseSolver):
                 if (self.step == 1) or (self.step % self.valid_step == 0):
                     valid_loss = self.validate()
                     
+                    print(f"And here's the valid loss again: {valid_loss}")
+
                     if self.early_stopping:
                         self.last_n_losses.pop(0)
                         self.last_n_losses.append(valid_loss)
@@ -258,7 +260,7 @@ class Solver(BaseSolver):
             emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                             txt, txt_len, encode_len, att_output)
             print(f"Here is the loss: {att_loss}")
-            
+
             self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
@@ -316,6 +318,7 @@ class Solver(BaseSolver):
 
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
+        
         return total_loss
       
         
