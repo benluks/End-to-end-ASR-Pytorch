@@ -257,6 +257,8 @@ class Solver(BaseSolver):
 
             emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
                                                                             txt, txt_len, encode_len, att_output)
+            print(f"Here is the loss: {att_loss}")
+            
             self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
 
             if self.use_cer:
