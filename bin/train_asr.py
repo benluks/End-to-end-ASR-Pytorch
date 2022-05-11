@@ -266,7 +266,7 @@ class Solver(BaseSolver):
             att_loss += [losses[2]]
             total_loss += [losses[3]]
 
-            print(f"Here's thes loss: {att_loss}")
+            print(f"Here's thes loss: {att_loss[-1]}")
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
