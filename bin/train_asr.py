@@ -27,6 +27,7 @@ class Solver(BaseSolver):
             self.patience = self.config['hparas']['patience']
             self.last_n_losses = [float('inf')] * (self.patience + 1)
             self.end_training = False
+            self.best_valid_loss = float('inf')
 
         # Curriculum learning affects data loader
         self.curriculum = self.config['hparas']['curriculum']
@@ -140,6 +141,9 @@ class Solver(BaseSolver):
                 if (self.step == 1) or (self.step % self.valid_step == 0):
                     valid_loss = self.validate()
                     
+                    if valid_loss < self.best_valid_loss:
+                        self.best_valid_loss = valid_loss
+                    
                     self.verbose(f"Validation after step {self.step} ended with loss = {valid_loss}")
 
                     if self.early_stopping:
@@ -178,8 +182,8 @@ class Solver(BaseSolver):
             n_epochs += 1
             
             if self.end_training:
-                self.verbose('Loss has not improved for {} validation steps, ending training with best loss = {:.2f}'
-                            .format(self.patience, min(self.last_n_losses)))
+                self.verbose('Loss has not improved for {} validation steps, ending training after {} steps with best loss = {:.2f}'
+                            .format(self.patience, self.step, self.best_valid_loss))
                 break
         
         self.log.close()
