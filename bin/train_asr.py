@@ -27,6 +27,7 @@ class Solver(BaseSolver):
             self.patience = self.config['hparas']['patience']
             self.last_n_losses = [float('inf')] * (self.patience + 1)
             self.end_training = False
+            self.best_valid_loss = float('inf')
 
         # Curriculum learning affects data loader
         self.curriculum = self.config['hparas']['curriculum']
@@ -140,13 +141,29 @@ class Solver(BaseSolver):
                 if (self.step == 1) or (self.step % self.valid_step == 0):
                     valid_loss = self.validate()
                     
+                    if valid_loss < self.best_valid_loss:
+                        self.best_valid_loss = valid_loss
+                    
+                    self.verbose(f"Validation after step {self.step} ended with loss = {valid_loss}")
+
                     if self.early_stopping:
                         self.last_n_losses.pop(0)
                         self.last_n_losses.append(valid_loss)
                         
                         # check if loss hasn't improved for n epochs, end training
-                        if min(self.last_n_losses) == self.last_n_losses[0]:
-                            self.end_training = True
+                        # if min(self.last_n_losses) == self.last_n_losses[0]:
+                        #     self.end_training = True
+                        
+                        # end training unless there is improvement
+                        self.end_training = True
+
+                        for idx in range(1, len(self.last_n_losses)):
+                            # if loss has improved at all, don't end training
+                            if self.last_n_losses[idx] < self.last_n_losses[idx-1]:
+                                self.end_training = False
+                                break
+                            
+
 
                     if self.end_training:
                         break
@@ -165,8 +182,8 @@ class Solver(BaseSolver):
             n_epochs += 1
             
             if self.end_training:
-                self.verbose('Loss has not improved for {} validation steps, ending training with best loss = {:.2f}'
-                            .format(self.patience, min(self.last_n_losses)))
+                self.verbose('Loss has not improved for {} validation steps, ending training after {} steps with best loss = {:.2f}'
+                            .format(self.patience, self.step, self.best_valid_loss))
                 break
         
         self.log.close()
@@ -236,6 +253,8 @@ class Solver(BaseSolver):
             dev_cer = {'att': [], 'ctc': []}
         dev_wer = {'att': [], 'ctc': []}
 
+        emb_loss, ctc_loss, att_loss, total_loss = [], [], [], []
+
         for i, data in enumerate(self.dv_set):
             self.progress('Valid step - {}/{}'.format(i+1, len(self.dv_set)))
             # Fetch data
@@ -255,9 +274,14 @@ class Solver(BaseSolver):
             padding = output_len - max(txt_len)
             txt = F.pad(txt, (0, padding))
 
-            emb_loss, ctc_loss, att_loss, total_loss = self.compute_losses(dec_state, ctc_output, 
-                                                                            txt, txt_len, encode_len, att_output)
-            self.log_progress(total_loss, ctc_loss, att_loss, emb_loss, mode='dev')
+            losses = self.compute_losses(dec_state, ctc_output, txt, txt_len, encode_len, att_output)
+            
+            emb_loss += [losses[0]]
+            ctc_loss += [losses[1]]
+            att_loss += [losses[2]]
+            total_loss += [losses[3]]
+
+            print(f"Here's thes loss: {att_loss[-1]}")
 
             if self.use_cer:
                 dev_cer['att'].append(cal_er(self.tokenizer, att_output, txt, mode='cer'))
@@ -314,7 +338,10 @@ class Solver(BaseSolver):
 
         self.save_checkpoint('latest.pth', metric, score, show_msg=False)
 
-        return total_loss
+        mean = lambda ls: (sum(ls) / len(ls)) if ls[0] else None
+        self.log_progress(mean(total_loss), mean(ctc_loss), mean(att_loss), mean(emb_loss), mode='dev')
+        
+        return mean(total_loss)
       
         
         
