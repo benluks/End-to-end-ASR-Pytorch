@@ -147,8 +147,19 @@ class Solver(BaseSolver):
                         self.last_n_losses.append(valid_loss)
                         
                         # check if loss hasn't improved for n epochs, end training
-                        if min(self.last_n_losses) == self.last_n_losses[0]:
-                            self.end_training = True
+                        # if min(self.last_n_losses) == self.last_n_losses[0]:
+                        #     self.end_training = True
+                        
+                        # end training unless there is improvement
+                        self.end_training = True
+
+                        for idx in range(1, len(self.last_n_losses)):
+                            # if loss has improved at all, don't end training
+                            if self.last_n_losses[idx] < self.last_n_losses[idx-1]:
+                                self.end_training = False
+                                break
+                            
+
 
                     if self.end_training:
                         break
