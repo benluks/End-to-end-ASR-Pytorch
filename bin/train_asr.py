@@ -21,7 +21,7 @@ class Solver(BaseSolver):
         self.best_wer = {'att': 3.0, 'ctc': 3.0}
 
         # enable early stopping
-        self.early_stopping = bool(self.config['hparas']['early_stopping'])
+        self.early_stopping = self.config['hparas']['early_stopping']
         if self.early_stopping:
             self.patience = self.config['hparas']['patience']
             self.es_wait = self.config['hparas']['es_wait']
