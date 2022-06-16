@@ -268,7 +268,7 @@ class BinLSTM(nn.LSTM):
         super().__init__(*args, **kwargs)
         self.device = kwargs['device'] if 'device' in kwargs.keys() else torch.device('cpu')
 
-        unimplemented = [self.batch_first, self.bidirectional]
+        unimplemented = [self.bidirectional]
         if True in unimplemented:
             err = unimplemented[unimplemented.index(True)]
             raise NotImplementedError(f"Support for {err} is not yet implemented. Please initialize QLSTM with `{err}=False`")
@@ -308,6 +308,7 @@ class BinLSTM(nn.LSTM):
     def forward(self, input, h_0=None):
 
         T = input.size(0) if not self.batch_first else input.size(1)
+        B = input.size(int(not T))  # 0 to 1, 1 to 0
 
         # final hidden states (h and c) for each layer
         h_t = []
@@ -328,15 +329,16 @@ class BinLSTM(nn.LSTM):
 
             hidden = h_0 if h_0 else 2*(torch.zeros(input.size(1), self.hidden_size, device=self.device),)
             for t in range(T):
-
-                hidden = qlstm_cell(input[t], hidden, *layer_params)
+                
+                input_t = input[:, t, :] if self.batch_first else input[t]
+                hidden = qlstm_cell(input_t, hidden, *layer_params)
                 outputs.append(hidden[0])
         
             # all time-steps are done, end T loop
             # -----------------------------------
 
             h_t.append(hidden)
-            outputs = torch.stack(outputs, 0)
+            outputs = torch.stack(outputs, 1 if self.batch_first else 0)
             # prev hidden states as following layer's input
             input = outputs
         
