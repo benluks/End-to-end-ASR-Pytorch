@@ -162,3 +162,16 @@ def load_embedding(text_encoder, embedding_filepath):
             embeddings[text_encoder.unk_idx] /= unk_count
 
         return embeddings
+
+
+def binarize(W, W0, device):
+    """
+    Binarize normalized weight matrix according to 
+    https://arxiv.org/abs/1809.11086
+    """
+    W_b = torch.clone(W) / W0
+    W_b.add_(1).div_(2).clamp_(0, 1)
+    mask = torch.rand((W_b.shape), device=device)
+    W_b.add_(-mask)
+    W_b = W_b.sign()
+    return W_b

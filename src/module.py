@@ -110,8 +110,12 @@ class RNNLayer(nn.Module):
             raise ValueError('Unsupported Sample Style: '+self.sample_style)
 
         # Recurrent layer
-        self.layer = getattr(nn, module.upper())(
-            input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
+        if module == 'BinLSTM'
+            self.layer = BinLSTM(
+                input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
+        else:
+            self.layer = getattr(nn, module.upper())(
+                input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
 
         # Regularizations
         if self.layer_norm:
@@ -257,3 +261,88 @@ class LocationAwareAttention(BaseAttention):
         self.prev_att = attn
 
         return output, attn
+
+
+class BinLSTM(nn.LSTM):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.device = kwargs['device'] if 'device' in kwargs.keys() else torch.device('cpu')
+
+        unimplemented = [self.batch_first, self.bidirectional]
+        if True in unimplemented:
+            err = unimplemented[unimplemented.index(True)]
+            raise NotImplementedError(f"Support for {err} is not yet implemented. Please initialize QLSTM with `{err}=False`")
+
+        self.init_constant = kwargs['init_constant'] if 'init_constant' in kwargs.keys() else 6.
+
+        for layer in range(self.num_layers):  
+        
+            # add batchnorms
+            bn_gates = nn.BatchNorm1d(8)
+            bn_c = nn.BatchNorm1d(1)
+            
+            bn_gates.bias.requires_grad_(False)
+            bn_c.bias.requires_grad_(False)
+            
+            self.add_module(f'bn_l{layer}', bn_gates)
+            self.add_module(f'bn_c_l{layer}', bn_c)
+
+            # add scaling factor W0
+            l_input_size = self.input_size if layer == 0 else self.hidden_size
+            W0_ih = sqrt(self.init_constant / (l_input_size + 4 * self.hidden_size)) / 2
+            W0_hh = sqrt(self.init_constant / (self.hidden_size + 4 * self.hidden_size)) / 2
+
+            setattr(self, f'W0_ih_l{layer}', W0_ih)
+            setattr(self, f'W0_hh_l{layer}', W0_hh)
+
+
+    def binarize(self, par, name, device):
+    """
+    placeholder to signal which W0 values to pass
+    """
+        _, place, layer = name.split("_")
+        W0 = getattr(self, f"W0_{place}_{layer}")
+        return binarize(par, W0, device=self.device)
+
+
+    def forward(self, input, h_0=None):
+
+        T = input.size(0) if not self.batch_first else input.size(1)
+
+        # final hidden states (h and c) for each layer
+        h_t = []
+
+        for layer in range(self.num_layers):
+            
+            layer_params = [p for n, p in self.named_parameters() if n[-1] == str(layer)]
+            if not self.bias: layer_params += [None, None]
+            layer_params.append(self.device)
+        
+            layer_params.append(getattr(self, f'bn_l{layer}'))
+            layer_params.append(getattr(self, f'bn_c_l{layer}'))
+            
+            # TODO: more graceful way to innitialize return values so if statements
+            # not needed in forward loop. Ditto for `h_t = None` above.
+
+            outputs = []
+
+            hidden = h_0 if h_0 else 2*(torch.zeros(input.size(1), self.hidden_size, device=self.device),)
+            for t in range(T):
+
+                hidden = qlstm_cell(input[t], hidden, *layer_params)
+                outputs.append(hidden[0])
+        
+            # all time-steps are done, end T loop
+            # -----------------------------------
+
+            h_t.append(hidden)
+            outputs = torch.stack(outputs, 0)
+            # prev hidden states as following layer's input
+            input = outputs
+        
+        # h_t is [(h, c), (h, c), ...], we want to separate into lists
+        # [[h_0, h_1, ...], [c_0, c_1, ...]]
+        h_t, c_t = list(zip(*h_t))
+        h_t, c_t = torch.stack(h_t, 0), torch.stack(c_t, 0)
+
+        return outputs, (h_t, c_t)
