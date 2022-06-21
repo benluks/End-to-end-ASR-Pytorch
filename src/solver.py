@@ -83,6 +83,10 @@ class BaseSolver():
         loss.backward()
         grad_norm = torch.nn.utils.clip_grad_norm_(
             self.model.parameters(), self.GRAD_CLIP)
+        
+        # reset weights here
+
+        
         if math.isnan(grad_norm):
             self.verbose('Error : grad norm is NaN @ step '+str(self.step))
         else:

@@ -271,37 +271,37 @@ class QLSTM(nn.LSTM):
         self.quant = quant
 
         if self.quant:
-        # layer-specific initializations 
-        for layer in range(self.num_layers):  
-            
-            # add batchnorms
-            bn_gates = nn.BatchNorm1d(8)
-            bn_c = nn.BatchNorm1d(1)
-            
-            bn_gates.bias.requires_grad_(False)
-            bn_c.bias.requires_grad_(False)
-            
-            self.add_module(f'bn_l{layer}', bn_gates)
-            self.add_module(f'bn_c_l{layer}', bn_c)
+            # layer-specific initializations 
+            for layer in range(self.num_layers):  
+                
+                # add batchnorms
+                bn_gates = nn.BatchNorm1d(8)
+                bn_c = nn.BatchNorm1d(1)
+                
+                bn_gates.bias.requires_grad_(False)
+                bn_c.bias.requires_grad_(False)
+                
+                self.add_module(f'bn_l{layer}', bn_gates)
+                self.add_module(f'bn_c_l{layer}', bn_c)
 
-            # add scaling factor W0
-            l_input_size = self.input_size if layer == 0 else self.hidden_size
-            W0_ih = sqrt(self.init_constant / (l_input_size + 4 * self.hidden_size)) / 2
-            W0_hh = sqrt(self.init_constant / (self.hidden_size + 4 * self.hidden_size)) / 2
+                # add scaling factor W0
+                l_input_size = self.input_size if layer == 0 else self.hidden_size
+                W0_ih = sqrt(self.init_constant / (l_input_size + 4 * self.hidden_size)) / 2
+                W0_hh = sqrt(self.init_constant / (self.hidden_size + 4 * self.hidden_size)) / 2
 
-            setattr(self, f'W0_ih_l{layer}', W0_ih)
-            setattr(self, f'W0_hh_l{layer}', W0_hh)
+                setattr(self, f'W0_ih_l{layer}', W0_ih)
+                setattr(self, f'W0_hh_l{layer}', W0_hh)
 
-            if self.bidirectional:
-            # add batchnorms
-            bn_gates_reverse = nn.BatchNorm1d(8)
-            bn_c_reverse = nn.BatchNorm1d(1)
-            
-            bn_gates_reverse.bias.requires_grad_(False)
-            bn_c_reverse.bias.requires_grad_(False)
-            
-            self.add_module(f'bn_l{layer}_reverse', bn_gates_reverse)
-            self.add_module(f'bn_c_l{layer}_reverse', bn_c_reverse)
+                if self.bidirectional:
+                # add batchnorms
+                bn_gates_reverse = nn.BatchNorm1d(8)
+                bn_c_reverse = nn.BatchNorm1d(1)
+                
+                bn_gates_reverse.bias.requires_grad_(False)
+                bn_c_reverse.bias.requires_grad_(False)
+                
+                self.add_module(f'bn_l{layer}_reverse', bn_gates_reverse)
+                self.add_module(f'bn_c_l{layer}_reverse', bn_c_reverse)
 
 
     def _get_layer_params(self, layer, reverse=False):
@@ -315,8 +315,8 @@ class QLSTM(nn.LSTM):
         if not self.bias: layer_params += [0, 0]
         layer_params.append(self.device)
         if self.quant:
-        layer_params.append(getattr(self, f'bn_l{layer}{rev}'))
-        layer_params.append(getattr(self, f'bn_c_l{layer}{rev}'))
+            layer_params.append(getattr(self, f'bn_l{layer}{rev}'))
+            layer_params.append(getattr(self, f'bn_c_l{layer}{rev}'))
         
         return layer_params
 
@@ -337,32 +337,30 @@ class QLSTM(nn.LSTM):
         
         # final hidden states (h and c) for each layer
         h_t = []
-        if self.bidirectional:
-        h_t_reverse = []
 
         for layer in range(self.num_layers):
         
-        layer_params = self._get_layer_params(layer)
-        outputs = []
+            layer_params = self._get_layer_params(layer)
+            outputs = []
 
-        if self.bidirectional:
-            layer_params_reverse = self._get_layer_params(layer, reverse=True)
-            outputs_reverse = []
-            
-            # hidden states if given h_0 if bidirectional
-            if h_0:
-            hidden = (h_0[0][2*layer], h_0[1][2*layer])
-            hidden_reverse = (h_0[0][2*layer+1], h_0[1][2*layer+1])
-            else:
-            hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
-            hidden_reverse = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
+            if self.bidirectional:
+                layer_params_reverse = self._get_layer_params(layer, reverse=True)
+                outputs_reverse = []
+                
+                # hidden states if given h_0 if bidirectional
+                if h_0:
+                    hidden = (h_0[0][2*layer], h_0[1][2*layer])
+                    hidden_reverse = (h_0[0][2*layer+1], h_0[1][2*layer+1])
+                else:
+                    hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
+                    hidden_reverse = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
         
         # init hidden states if not bidirectional
         else:
             if h_0:
-            hidden = (h_0[0][layer], h_0[1][layer]) if self.num_layers > 1 else h_0
+                hidden = (h_0[0][layer], h_0[1][layer]) if self.num_layers > 1 else h_0
             else:
-            hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
+                hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
 
         # loop through time steps
         for t in range(T):  
@@ -372,9 +370,9 @@ class QLSTM(nn.LSTM):
             outputs.append(hidden[0])
 
             if self.bidirectional:
-            input_t_reverse = input[:, -(t+1), :] if self.batch_first else input[-(t+1)]
-            hidden_reverse = qlstm_cell(input_t_reverse, hidden_reverse, *layer_params_reverse)
-            outputs_reverse = [hidden_reverse[0]] + outputs_reverse
+                input_t_reverse = input[:, -(t+1), :] if self.batch_first else input[-(t+1)]
+                hidden_reverse = qlstm_cell(input_t_reverse, hidden_reverse, *layer_params_reverse)
+                outputs_reverse = [hidden_reverse[0]] + outputs_reverse
         
         # all time-steps are done, end T loop
         # -----------------------------------
@@ -391,8 +389,7 @@ class QLSTM(nn.LSTM):
         # prev hidden states as following layer's input      
         input = outputs
         
-        # h_t is [(h, c), (h, c), ...], we want to separate into lists
-        # [[h_0, h_1, ...], [c_0, c_1, ...]]
+        # h_t is [(h, c), (h, c), ...], we want to separate into lists [[h_0, h_1, ...], [c_0, c_1, ...]]
         h_t, c_t = list(zip(*h_t))
         h_t, c_t = torch.stack(h_t, 0), torch.stack(c_t, 0)
 
