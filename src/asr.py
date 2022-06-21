@@ -346,7 +346,7 @@ class Encoder(nn.Module):
             self.sample_rate = self.sample_rate*4
 
         # Recurrent encoder
-        if module in ['LSTM', 'GRU', 'BinLSTM']:
+        if module in ['LSTM', 'GRU', 'QLSTM']:
             for l in range(num_layers):
                 module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
                                             sample_rate[l], sample_style, proj[l]))
