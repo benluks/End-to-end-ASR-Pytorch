@@ -111,8 +111,11 @@ class RNNLayer(nn.Module):
 
         # Recurrent layer
         else:
-            self.layer = getattr(nn, module.upper())(
-                input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
+            if module == 'QLSTM':
+                self.layer = QLSTM(input_size=input_dim, hidden_size=dim, bidirectional=bidirection, num_layers=1, batch_first=True)
+            else:
+                self.layer = getattr(nn, module.upper())(
+                    input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
 
         # Regularizations
         if self.layer_norm:
