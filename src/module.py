@@ -94,7 +94,7 @@ class CNNExtractor(nn.Module):
 class RNNLayer(nn.Module):
     ''' RNN wrapper, includes time-downsampling'''
 
-    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, bnn):
+    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj):
         super(RNNLayer, self).__init__()
         # Setup
         rnn_out_dim = 2*dim if bidirection else dim
@@ -105,7 +105,6 @@ class RNNLayer(nn.Module):
         self.sample_rate = sample_rate
         self.sample_style = sample_style
         self.proj = proj
-        self.bnn = bnn
 
         if self.sample_style not in ['drop', 'concat']:
             raise ValueError('Unsupported Sample Style: '+self.sample_style)
