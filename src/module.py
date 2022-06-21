@@ -293,15 +293,15 @@ class QLSTM(nn.LSTM):
                 setattr(self, f'W0_hh_l{layer}', W0_hh)
 
                 if self.bidirectional:
-                # add batchnorms
-                bn_gates_reverse = nn.BatchNorm1d(8)
-                bn_c_reverse = nn.BatchNorm1d(1)
-                
-                bn_gates_reverse.bias.requires_grad_(False)
-                bn_c_reverse.bias.requires_grad_(False)
-                
-                self.add_module(f'bn_l{layer}_reverse', bn_gates_reverse)
-                self.add_module(f'bn_c_l{layer}_reverse', bn_c_reverse)
+                    # add batchnorms
+                    bn_gates_reverse = nn.BatchNorm1d(8)
+                    bn_c_reverse = nn.BatchNorm1d(1)
+                    
+                    bn_gates_reverse.bias.requires_grad_(False)
+                    bn_c_reverse.bias.requires_grad_(False)
+                    
+                    self.add_module(f'bn_l{layer}_reverse', bn_gates_reverse)
+                    self.add_module(f'bn_c_l{layer}_reverse', bn_c_reverse)
 
 
     def _get_layer_params(self, layer, reverse=False):
