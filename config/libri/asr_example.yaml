@@ -34,24 +34,24 @@ hparas:                                   # Experiment hyper-parameters
 model:                                    # Model architecture
   ctc_weight: 0.0                         # Weight for CTC loss
   encoder:
-    prenet: 'vgg'                         # 'vgg'/'cnn'/''
+    prenet: 'None'                         # 'vgg'/'cnn'/''
     # vgg: True                             # 4x reduction on time feature extraction
-    module: 'LSTM'                        # 'LSTM'/'GRU'/'Transformer'/'QLSTM'
+    module: 'QLSTM'                        # 'LSTM'/'GRU'/'Transformer'/'QLSTM'
     bidirection: True
-    dim: [512,512,512,512,512]
-    dropout: [0,0,0,0,0]
-    layer_norm: [False,False,False,False,False]
-    proj: [True,True,True,True,True]      # Linear projection + Tanh after each rnn layer
-    sample_rate: [1,1,1,1,1]
+    dim: [512,512,512,512]
+    dropout: [0,0,0,0]
+    layer_norm: [False,False,False,False]
+    proj: [False,False,False,False]      # Linear projection + Tanh after each rnn layer
+    sample_rate: [2,2,1,1]
     sample_style: 'drop'                  # 'drop'/'concat'
   attention:
     mode: 'loc'                           # 'dot'/'loc'
-    dim: 300
+    dim: 200
     num_head: 1
     v_proj: False                         # if False and num_head>1, encoder state will be duplicated for each head
-    temperature: 0.5                      # scaling factor for attention
+    temperature: 1                        # scaling factor for attention
     loc_kernel_size: 100                  # just for mode=='loc'
-    loc_kernel_num: 10                    # just for mode=='loc'
+    loc_kernel_num: 1                     # just for mode=='loc'
   decoder:
     module: 'LSTM'                        # 'LSTM'/'GRU'/'Transformer'
     dim: 512
