@@ -74,12 +74,12 @@ class ASR(nn.Module):
     save full-precision params (weight or bias, not bn)
     and binarize original data
     """
-    for mod in solver.model.modules():
-        if isinstance(mod, QLSTM) and mod.quant:    
-            for name, par in mod:
-                if name[:2] != 'bn':
-                    par.org = par.data
-                    par.data = mod.binarize(par, name, self.device)
+        for mod in solver.model.modules():
+            if isinstance(mod, QLSTM) and mod.quant:    
+                for name, par in mod:
+                    if name[:2] != 'bn':
+                        par.org = par.data
+                        par.data = mod.binarize(par, name, self.device)
 
     def forward(self, audio_feature, feature_len, decode_step, tf_rate=0.0, teacher=None,
                 emb_decoder=None, get_dec_state=False):
