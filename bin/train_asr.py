@@ -22,7 +22,7 @@ class Solver(BaseSolver):
 
         # enable early stopping
         self.early_stopping = self.config['hparas']['early_stopping'] \
-                                if early_stopping in self.config['hparas'].keys() else False
+                                if 'early_stopping' in self.config['hparas'].keys() else False
         
         if self.early_stopping:
             self.patience = self.config['hparas']['patience']
