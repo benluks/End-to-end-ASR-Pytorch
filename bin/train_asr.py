@@ -30,6 +30,7 @@ class Solver(BaseSolver):
 
         # Curriculum learning affects data loader
         self.curriculum = self.config['hparas']['curriculum']
+        self.binary_training = self.config['model']['encoder']['module'] == 'QLSTM'
 
     def fetch_data(self, data):
         ''' Move data to device and compute text seq. length'''
@@ -112,11 +113,14 @@ class Solver(BaseSolver):
                 feat, feat_len, txt, txt_len = self.fetch_data(data)
                 self.timer.cnt('rd')
 
+                
+
+                # binarize weights
+                if self.binary_training:
+                    print('we doin binary')
+
                 # Forward model
                 # Note: txt should NOT start w/ <sos>
-
-                # binarize weights here
-
                 ctc_output, encode_len, att_output, att_align, dec_state = \
                     self.model(feat, feat_len, max(txt_len), tf_rate=tf_rate,
                                teacher=txt, get_dec_state=self.emb_reg)
