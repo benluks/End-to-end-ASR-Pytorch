@@ -12,7 +12,7 @@ from src.module import VGGExtractor, CNNExtractor, RNNLayer, ScaleDotAttention, 
 class ASR(nn.Module):
     ''' ASR model, including Encoder/Decoder(s)'''
 
-    def __init__(self, input_size, vocab_size, init_adadelta, ctc_weight, encoder, attention, decoder, emb_drop=0.0):
+    def __init__(self, input_size, vocab_size, init_adadelta, ctc_weight, encoder, attention, decoder, device, emb_drop=0.0):
         super(ASR, self).__init__()
 
         # Setup
@@ -21,6 +21,7 @@ class ASR(nn.Module):
         self.ctc_weight = ctc_weight
         self.enable_ctc = ctc_weight > 0
         self.enable_att = ctc_weight != 1
+        self.device = device
         self.lm = None
 
         # Modules
