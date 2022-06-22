@@ -76,7 +76,7 @@ class ASR(nn.Module):
         """
         for mod in self.modules():
             if isinstance(mod, QLSTM) and mod.quant:    
-                for name, par in mod:
+                for name, par in mod.named_parameters():
                     if name[:2] != 'bn':
                         par.org = par.data
                         par.data = mod.binarize(par, name, self.device)
