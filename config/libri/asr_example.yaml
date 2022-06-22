@@ -30,6 +30,7 @@ hparas:                                   # Experiment hyper-parameters
   eps: 0.00000001                         # 1e-8
   lr_scheduler: 'fixed'                   # 'fixed'/'warmup'
   curriculum: 0
+  early_stopping: False
 
 model:                                    # Model architecture
   ctc_weight: 0.0                         # Weight for CTC loss
