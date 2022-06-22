@@ -117,7 +117,9 @@ class Solver(BaseSolver):
 
                 # binarize weights
                 if self.binary_training:
-                    print('we doin binary')
+                    # iterate through bnn layers and binarize weights
+                    for mod in self.model.modules():
+                        
 
                 # Forward model
                 # Note: txt should NOT start w/ <sos>
