@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
-from src.util import binarize
+from src.util import binarize, qlstm_cell
 
 
 class VGGExtractor(nn.Module):
