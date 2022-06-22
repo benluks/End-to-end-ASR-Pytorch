@@ -70,10 +70,10 @@ class ASR(nn.Module):
         return msg
 
     def save_and_quantize_params(self):
-    """
-    save full-precision params (weight or bias, not bn)
-    and binarize original data
-    """
+        """
+        save full-precision params (weight or bias, not bn)
+        and binarize original data
+        """
         for mod in solver.model.modules():
             if isinstance(mod, QLSTM) and mod.quant:    
                 for name, par in mod:
