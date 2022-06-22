@@ -74,7 +74,7 @@ class ASR(nn.Module):
         save full-precision params (weight or bias, not bn)
         and binarize original data
         """
-        for mod in self.model.modules():
+        for mod in self.modules():
             if isinstance(mod, QLSTM) and mod.quant:    
                 for name, par in mod:
                     if name[:2] != 'bn':
