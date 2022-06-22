@@ -175,3 +175,28 @@ def binarize(W, W0, device):
     W_b.add_(-mask)
     W_b = W_b.sign()
     return W_b
+
+
+def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device, 
+               bn_gates=nn.Identity(), bn_c=nn.Identity()):
+  
+    hx, cx = hidden
+    batch_size, hidden_size = hx.shape
+
+    # gates: [B, 8*H] => [B, 8, H]
+    gates = torch.cat((torch.mm(input, w_ih.t()) + b_ih, torch.mm(hx, w_hh.t()) + b_hh), dim=1).view(batch_size, 8, hidden_size)
+    # gates: [B, 8, H] => [B, 2, 4, H] => (sum) => [B, 4, H]
+    gates = bn_gates(gates).view(batch_size, 2, 4, hidden_size).sum(1)
+    # gates: 4 * ([B, H],)
+    ingate, forgetgate, cellgate, outgate = gates.unbind(1)
+
+    ingate = torch.sigmoid(ingate)
+    forgetgate = torch.sigmoid(forgetgate)
+    cellgate = torch.tanh(cellgate)
+    outgate = torch.sigmoid(outgate)
+
+    # unsqueeze to allow single batchnorm and resqueeze to get rid of extra dim
+    cy = bn_c(((forgetgate * cx) + (ingate * cellgate)).unsqueeze(1)).squeeze(1)
+    hy = outgate * torch.tanh(cy)
+
+    return hy, cy
