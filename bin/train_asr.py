@@ -113,13 +113,9 @@ class Solver(BaseSolver):
                 feat, feat_len, txt, txt_len = self.fetch_data(data)
                 self.timer.cnt('rd')
 
-                
-
                 # binarize weights
                 if self.binary_training:
-                    # iterate through bnn layers and binarize weights
                     self.model.save_and_quantize_params()
-
 
                 # Forward model
                 # Note: txt should NOT start w/ <sos>

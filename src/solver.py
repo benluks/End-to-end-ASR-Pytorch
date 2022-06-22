@@ -85,8 +85,9 @@ class BaseSolver():
             self.model.parameters(), self.GRAD_CLIP)
         
         # reset weights here
+        if self.binary_training:
+            print('The backward function recognizes binary')
 
-        
         if math.isnan(grad_norm):
             self.verbose('Error : grad norm is NaN @ step '+str(self.step))
         else:
