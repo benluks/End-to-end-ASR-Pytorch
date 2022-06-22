@@ -118,8 +118,8 @@ class Solver(BaseSolver):
                 # binarize weights
                 if self.binary_training:
                     # iterate through bnn layers and binarize weights
-                    for mod in self.model.modules():
-                        
+                    self.model.save_and_quantize_params()
+
 
                 # Forward model
                 # Note: txt should NOT start w/ <sos>
