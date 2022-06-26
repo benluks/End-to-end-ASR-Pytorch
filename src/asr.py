@@ -45,6 +45,9 @@ class ASR(nn.Module):
                 for l in range(self.decoder.layer):
                     bias = getattr(self.decoder.layers, 'bias_ih_l{}'.format(l))
                     bias = init_gate(bias)
+        
+        # binary training    
+        self.weights_binary = False
 
     def set_state(self, prev_state, prev_attn):
         ''' Setting up all memory states for beam decoding'''
@@ -75,12 +78,26 @@ class ASR(nn.Module):
         save full-precision params (weight or bias, not bn)
         and binarize original data
         """
+        assert not self.weights_binary, "Cannot binarize weights that are already binarized"
+
         for mod in self.modules():
             if isinstance(mod, QLSTM) and mod.quant:    
                 for name, par in mod.named_parameters():
                     if name[:2] != 'bn':
                         par.org = par.data
                         par.data = mod.binarize(par, name, self.device)
+        self.weights_binary = True
+
+    def reset_binarized_params(self):
+        """
+        Reset to full-precision params for binary training 
+        """
+        assert self.weights_binary, "Cannot reset weights that are already full-precision"
+
+        for par in self.parameters():
+            if hasattr(par, 'org'):
+                par.data = par.org
+        self.weights_binary = False
 
     def forward(self, audio_feature, feature_len, decode_step, tf_rate=0.0, teacher=None,
                 emb_decoder=None, get_dec_state=False):

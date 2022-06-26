@@ -84,9 +84,9 @@ class BaseSolver():
         grad_norm = torch.nn.utils.clip_grad_norm_(
             self.model.parameters(), self.GRAD_CLIP)
         
-        # reset weights here
+        # reset weights here:
         if self.binary_training:
-            print('The backward function recognizes binary')
+            self.model.reset_binarized_params()
 
         if math.isnan(grad_norm):
             self.verbose('Error : grad norm is NaN @ step '+str(self.step))

@@ -144,6 +144,8 @@ class Solver(BaseSolver):
 
                 # Validation
                 if (self.step == 1) or (self.step % self.valid_step == 0):
+                    if self.binary_training:
+                        self.model.save_and_quantize_params()
                     valid_loss = self.validate()
                     
                     if self.early_stopping:
