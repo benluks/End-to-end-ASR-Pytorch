@@ -115,7 +115,7 @@ class Solver(BaseSolver):
                 self.timer.cnt('rd')
 
                 # binarize weights
-                if self.binary_training:
+                if self.binary_training and not self.model.weights_binary:
                     self.model.save_and_quantize_params()
 
                 # Forward model
