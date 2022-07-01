@@ -95,7 +95,7 @@ class CNNExtractor(nn.Module):
 class RNNLayer(nn.Module):
     ''' RNN wrapper, includes time-downsampling'''
 
-    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj):
+    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, device=None):
         super(RNNLayer, self).__init__()
         # Setup
         rnn_out_dim = 2*dim if bidirection else dim
@@ -331,7 +331,8 @@ class QLSTM(nn.LSTM):
         """
         _, place, layer = name.split("_")[:3]
         W0 = getattr(self, f"W0_{place}_{layer}")
-        return binarize(par, W0, device=self.device)
+        print(self.device)
+        return binarize(par, W0, device=device)
 
 
     def forward(self, input, h_0=None):
