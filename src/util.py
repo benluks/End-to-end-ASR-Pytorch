@@ -172,6 +172,7 @@ def binarize(W, W0, device):
     W_b = torch.clone(W) / W0
     W_b.add_(1).div_(2).clamp_(0, 1)
     mask = torch.rand((W_b.shape), device=device)
+    print(mask.device)
     W_b.add_(-mask)
     W_b = W_b.sign()
     return W_b
