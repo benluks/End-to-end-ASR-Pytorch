@@ -25,7 +25,7 @@ class ASR(nn.Module):
         self.lm = None
 
         # Modules
-        self.encoder = Encoder(input_size, **encoder)
+        self.encoder = Encoder(input_size, device=self.device, **encoder)
         if self.enable_ctc:
             self.ctc_layer = nn.Linear(self.encoder.out_dim, vocab_size)
         if self.enable_att:
@@ -347,7 +347,7 @@ class Encoder(nn.Module):
     ''' Encoder (a.k.a. Listener in LAS)
         Encodes acoustic feature to latent representation, see config file for more details.'''
 
-    def __init__(self, input_size, prenet, module, bidirection, dim, dropout, layer_norm, proj, sample_rate, sample_style):
+    def __init__(self, input_size, prenet, module, bidirection, dim, dropout, layer_norm, proj, sample_rate, sample_style, device):
         super(Encoder, self).__init__()
 
         # Hyper-parameters checking
@@ -358,6 +358,7 @@ class Encoder(nn.Module):
         assert len(dropout) == len(dim), 'Number of layer mismatch'
         num_layers = len(dim)
         assert num_layers >= 1, 'Encoder should have at least 1 layer'
+        self.device=device
 
         # Construct model
         module_list = []
@@ -379,7 +380,7 @@ class Encoder(nn.Module):
         if module in ['LSTM', 'GRU', 'QLSTM']:
             for l in range(num_layers):
                 module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
-                                            sample_rate[l], sample_style, proj[l]))
+                                            sample_rate[l], sample_style, proj[l] device=self.device))
                 input_dim = module_list[-1].out_dim
                 self.sample_rate = self.sample_rate*sample_rate[l]
         else:

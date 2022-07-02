@@ -95,7 +95,7 @@ class CNNExtractor(nn.Module):
 class RNNLayer(nn.Module):
     ''' RNN wrapper, includes time-downsampling'''
 
-    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, device=None):
+    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, device):
         super(RNNLayer, self).__init__()
         # Setup
         rnn_out_dim = 2*dim if bidirection else dim
@@ -106,6 +106,7 @@ class RNNLayer(nn.Module):
         self.sample_rate = sample_rate
         self.sample_style = sample_style
         self.proj = proj
+        self.device = device
 
         if self.sample_style not in ['drop', 'concat']:
             raise ValueError('Unsupported Sample Style: '+self.sample_style)
@@ -114,7 +115,7 @@ class RNNLayer(nn.Module):
         else:
             if module == 'QLSTM':
                 self.layer = QLSTM(input_size=input_dim, hidden_size=dim, num_layers=1, 
-                                    batch_first=True, bias=False, bidirectional=bidirection)
+                                    batch_first=True, bias=False, bidirectional=bidirection, device=device)
             else:
                 self.layer = getattr(nn, module.upper())(
                     input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
@@ -270,11 +271,7 @@ class QLSTM(nn.LSTM):
     def __init__(self, *args, quant='bin', **kwargs):
 
         super().__init__(**kwargs)
-        
-        # adding statement here because implementation requires device and no efficient way of 
-        # passing device arg in codebase
-        torch.device(
-            'cuda') if self.paras.gpu and torch.cuda.is_available() else torch.device('cpu')
+        self.device = kwargs['device'] if 'device' in kwargs.keys() else torch.device('cpu')
         self.init_constant = kwargs['init_constant'] if 'init_constant' in kwargs.keys() else 6.
         self.quant = quant
 
