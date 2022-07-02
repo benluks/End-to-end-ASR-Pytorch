@@ -351,7 +351,6 @@ class QLSTM(nn.LSTM):
             if self.bidirectional:
                 layer_params_reverse = self._get_layer_params(layer, reverse=True)
                 outputs_reverse = []
-                print(self.device)
                 # hidden states if given h_0 if bidirectional
                 if h_0:
                     hidden = (h_0[0][2*layer], h_0[1][2*layer])
