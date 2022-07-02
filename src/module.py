@@ -363,6 +363,8 @@ class QLSTM(nn.LSTM):
         else:
             if h_0 is not None:
                 hidden = (h_0[0][layer], h_0[1][layer]) if self.num_layers > 1 else h_0
+                if (type(hidden) == torch.Tensor) or (len(hidden) == 1):
+                    hidden = (hidden, torch.zeros_like(hidden))
             else:
                 hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
 

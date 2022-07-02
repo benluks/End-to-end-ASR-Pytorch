@@ -179,9 +179,7 @@ def binarize(W, W0, device):
 
 def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device, 
                bn_gates=nn.Identity(), bn_c=nn.Identity()):
-    
-    print(type(hidden))
-
+               
     hx, cx = hidden
     batch_size, hidden_size = hx.shape
     
