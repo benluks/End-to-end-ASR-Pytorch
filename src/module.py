@@ -361,7 +361,7 @@ class QLSTM(nn.LSTM):
         
         # init hidden states if not bidirectional
         else:
-            if h_0:
+            if h_0 is not None:
                 hidden = (h_0[0][layer], h_0[1][layer]) if self.num_layers > 1 else h_0
             else:
                 hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
