@@ -347,7 +347,7 @@ class Encoder(nn.Module):
     ''' Encoder (a.k.a. Listener in LAS)
         Encodes acoustic feature to latent representation, see config file for more details.'''
 
-    def __init__(self, input_size, prenet, module, bidirection, dim, dropout, layer_norm, proj, sample_rate, sample_style, device=None):
+    def __init__(self, input_size, prenet, module, bidirection, dim, dropout, layer_norm, proj, sample_rate, sample_style):
         super(Encoder, self).__init__()
 
         # Hyper-parameters checking
@@ -379,7 +379,7 @@ class Encoder(nn.Module):
         if module in ['LSTM', 'GRU', 'QLSTM']:
             for l in range(num_layers):
                 module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
-                                            sample_rate[l], sample_style, proj[l], device=device))
+                                            sample_rate[l], sample_style, proj[l]))
                 input_dim = module_list[-1].out_dim
                 self.sample_rate = self.sample_rate*sample_rate[l]
         else:

@@ -182,7 +182,7 @@ def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device,
   
     hx, cx = hidden
     batch_size, hidden_size = hx.shape
-
+    print(hx.device)
     # gates: [B, 8*H] => [B, 8, H]
     gates = torch.cat((torch.mm(input, w_ih.t()) + b_ih, torch.mm(hx, w_hh.t()) + b_hh), dim=1).view(batch_size, 8, hidden_size)
     # gates: [B, 8, H] => [B, 2, 4, H] => (sum) => [B, 4, H]
