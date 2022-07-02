@@ -331,7 +331,6 @@ class QLSTM(nn.LSTM):
         """
         _, place, layer = name.split("_")[:3]
         W0 = getattr(self, f"W0_{place}_{layer}")
-        print(self.device)
         return binarize(par, W0, device=device)
 
 
