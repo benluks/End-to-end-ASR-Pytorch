@@ -33,7 +33,7 @@ class ASR(nn.Module):
             self.pre_embed = nn.Embedding(vocab_size, self.dec_dim)
             self.embed_drop = nn.Dropout(emb_drop)
             self.decoder = Decoder(
-                self.encoder.out_dim+self.dec_dim, vocab_size, **decoder)
+                self.encoder.out_dim+self.dec_dim, vocab_size, device=self.device, **decoder)
             query_dim = self.dec_dim*self.decoder.layer
             self.attention = Attention(
                 self.encoder.out_dim, query_dim, **attention)
@@ -189,21 +189,25 @@ class Decoder(nn.Module):
     ''' Decoder (a.k.a. Speller in LAS) '''
     # ToDo:　More elegant way to implement decoder
 
-    def __init__(self, input_dim, vocab_size, module, dim, layer, dropout):
+    def __init__(self, input_dim, vocab_size, module, dim, layer, dropout, device):
         super(Decoder, self).__init__()
         self.in_dim = input_dim
         self.layer = layer
         self.dim = dim
         self.dropout = dropout
+        self.device = device
 
         # Init
-        assert module in ['LSTM', 'GRU'], NotImplementedError
+        assert module in ['LSTM', 'GRU', 'QLSTM'], NotImplementedError
         self.hidden_state = None
         self.enable_cell = module == 'LSTM'
 
         # Modules
-        self.layers = getattr(nn, module)(
-            input_dim, dim, num_layers=layer, dropout=dropout, batch_first=True)
+        if module == 'QLSTM':
+            self.layers = QLSTM(input_size=input_dim, hidden_size=dim, dropout=dropout, device=self.device)
+        else:
+            self.layers = getattr(nn, module)(
+                input_dim, dim, num_layers=layer, dropout=dropout, batch_first=True)
         self.char_trans = nn.Linear(dim, vocab_size)
         self.final_dropout = nn.Dropout(dropout)
 
