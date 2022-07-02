@@ -181,7 +181,6 @@ def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device,
                bn_gates=nn.Identity(), bn_c=nn.Identity()):
 
     hx, cx = hidden
-    print(hx.shape)
     batch_size, hidden_size = hx.shape
     
     # gates: [B, 8*H] => [B, 8, H]
