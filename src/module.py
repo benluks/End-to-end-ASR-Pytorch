@@ -367,7 +367,7 @@ class QLSTM(nn.LSTM):
                 hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
 
         # loop through time steps
-        for t in range(T):  
+        for t in range(T):
             # TODO: implement successive layer forward pass for bidirectionality
             input_t = input[:, t, :] if self.batch_first else input[t]
             hidden = qlstm_cell(input_t, hidden, *layer_params)
