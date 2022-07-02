@@ -380,7 +380,7 @@ class Encoder(nn.Module):
         if module in ['LSTM', 'GRU', 'QLSTM']:
             for l in range(num_layers):
                 module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
-                                            sample_rate[l], sample_style, proj[l] device=self.device))
+                                            sample_rate[l], sample_style, proj[l], device=self.device))
                 input_dim = module_list[-1].out_dim
                 self.sample_rate = self.sample_rate*sample_rate[l]
         else:
