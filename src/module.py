@@ -270,7 +270,11 @@ class QLSTM(nn.LSTM):
     def __init__(self, *args, quant='bin', **kwargs):
 
         super().__init__(**kwargs)
-        self.device = kwargs['device'] if 'device' in kwargs.keys() else torch.device('cpu')
+        
+        # adding statement here because implementation requires device and no efficient way of 
+        # passing device arg in codebase
+        torch.device(
+            'cuda') if self.paras.gpu and torch.cuda.is_available() else torch.device('cpu')
         self.init_constant = kwargs['init_constant'] if 'init_constant' in kwargs.keys() else 6.
         self.quant = quant
 
