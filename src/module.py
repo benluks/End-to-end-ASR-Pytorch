@@ -300,15 +300,15 @@ class QLSTM(nn.LSTM):
                 setattr(self, f'W0_ih_l{layer}', W0_ih)
                 setattr(self, f'W0_hh_l{layer}', W0_hh)
 
-                # batchnorm on inputs
-                if self.binarize_inputs and self.bn_inputs:    
-                    bn_a = nn.LayerNorm(self.input_size)
-                    bn_a.bias.requires_grad_(False)
-                    self.add_module(f'bn_a_l{layer}', bn_a)
-                    
+                # binarizing inputs
+                if self.binarize_inputs:    
                     a0 = sqrt(self.init_constant / l_input_size) / 2
                     setattr(self, f'a0_l{layer}', a0)
-                
+                    if self.bn_inputs:
+                        bn_a = nn.LayerNorm(self.input_size)
+                        bn_a.bias.requires_grad_(False)
+                        self.add_module(f'bn_a_l{layer}', bn_a)
+                    
                 if self.bidirectional:
                     # add batchnorms
                     bn_gates_reverse = nn.BatchNorm1d(8)
