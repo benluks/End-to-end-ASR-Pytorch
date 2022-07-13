@@ -302,7 +302,7 @@ class QLSTM(nn.LSTM):
 
                 # batchnorm on inputs
                 if self.binarize_inputs and self.bn_inputs:    
-                    bn_a = nn.BatchNorm1d(1)
+                    bn_a = nn.LayerNorm(self.input_size)
                     bn_a.bias.requires_grad_(False)
                     self.add_module(f'bn_a_l{layer}', bn_a)
                     
@@ -378,23 +378,20 @@ class QLSTM(nn.LSTM):
                     hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
 
             # binarize inputs
-        
+            if self.binarize_inputs:
+                input = binarize(input, getattr(self, f"a0_l{layer}"), device=self.device)
+                print(f"binarized activations: {input}, {input.shape}")
+                if self.bn_inputs:
+                    input = getattr(self, f'bn_a_l{layer}')(input.unsqueeze(1)).squeeze(1)
+                    print(f"normalized binarized inputs: {input}")
 
             # loop through time steps
             for t in range(T):
 
                 input_t = input[:, t, :] if self.batch_first else input[t]
-                
-                if self.binarize_inputs:
-                    input_t = binarize(input_t, getattr(self, f"a0_l{layer}"), device=self.device)
-                    print(f"binarized activations: {input_t}, {input_t.shape}")
-                    if self.bn_inputs:
-                        input_t = getattr(self, f'bn_a_l{layer}')(input_t.unsqueeze(1)).squeeze(1)
-                        print(f"normalized binarized inputs: {input_t}")
-                
                 hidden = qlstm_cell(input_t, hidden, *layer_params)
                 
-                
+                # maybe binarize hidden activations too
                 
                 outputs.append(hidden[0])
 
