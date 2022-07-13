@@ -185,7 +185,7 @@ def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device,
     
     # gates: [B, 8*H] => [B, 8, H]
     temp = torch.mm(input, w_ih.t()) + b_ih, torch.mm(hx, w_hh.t()) + b_hh
-    print(f"matmul shape is {temp.shape}")
+    print(f"matmul shape is {temp[0].shape}")
     temp = torch.cat(temp, dim=1)
     gates = temp.view(batch_size, 8, hidden_size)
     # gates: [B, 8, H] => [B, 2, 4, H] => (sum) => [B, 4, H]
