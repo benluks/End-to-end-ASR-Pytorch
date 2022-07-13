@@ -403,6 +403,4 @@ class Encoder(nn.Module):
     def forward(self, input_x, enc_len):
         for i, layer in enumerate(self.layers):
             input_x, enc_len = layer(input_x, enc_len)
-            if isinstance() and i==0:
-                input_x = binarize(input_x)
         return input_x, enc_len
