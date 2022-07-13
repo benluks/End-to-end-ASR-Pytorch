@@ -375,8 +375,8 @@ class QLSTM(nn.LSTM):
         # loop through time steps
         for t in range(T):
             # TODO: implement successive layer forward pass for bidirectionality
-            print(f"input shape at beginning of qlstm forwrd pass {input.shape}")
             input_t = input[:, t, :] if self.batch_first else input[t]
+            print(f"input shape at beginning of qlstm forwrd pass {input.shape}")
             hidden = qlstm_cell(input_t, hidden, *layer_params)
             outputs.append(hidden[0])
 
