@@ -152,8 +152,8 @@ class ASR(nn.Module):
                 # the t_th/0th/only time step of decoder input
                 if isinstance(self.decoder.layers, QLSTM) and (len(decoder_input.shape) == 2):
                     print(f"unsqueezing decoder input, shape is {decoder_input.shape}")
-                    decoder_input = decoder_input.unsqueeze(0)
-                    
+                    decoder_input = decoder_input.unsqueeze(1)
+
                 cur_char, d_state = self.decoder(decoder_input)
                 # Prepare output as input of next step
                 if (teacher is not None):
