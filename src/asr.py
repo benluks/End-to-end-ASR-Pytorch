@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 
-from src.util import init_weights, init_gate
+from src.util import binarize, init_weights, init_gate
 from src.module import VGGExtractor, CNNExtractor, RNNLayer, ScaleDotAttention, LocationAwareAttention, QLSTM
 
 
@@ -383,8 +383,13 @@ class Encoder(nn.Module):
         # Recurrent encoder
         if module in ['LSTM', 'GRU', 'QLSTM']:
             for l in range(num_layers):
-                module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
-                                            sample_rate[l], sample_style, proj[l], device=self.device))
+                if module=='QLSTM' and l==0:
+                    # make 1st layer LSTM if QLSTM
+                    module_list.append(RNNLayer(input_dim, 'LSTM', dim[l], bidirection, dropout[l], layer_norm[l],
+                                                sample_rate[l], sample_style, proj[l], device=self.device))
+                else:
+                    module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
+                                                sample_rate[l], sample_style, proj[l], device=self.device))
                 input_dim = module_list[-1].out_dim
                 self.sample_rate = self.sample_rate*sample_rate[l]
         else:
@@ -396,6 +401,8 @@ class Encoder(nn.Module):
         self.layers = nn.ModuleList(module_list)
 
     def forward(self, input_x, enc_len):
-        for _, layer in enumerate(self.layers):
+        for i, layer in enumerate(self.layers):
             input_x, enc_len = layer(input_x, enc_len)
+            if isinstance() and i==0:
+                input_x = binarize(input_x)
         return input_x, enc_len

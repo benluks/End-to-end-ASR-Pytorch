@@ -274,6 +274,9 @@ class QLSTM(nn.LSTM):
         self.device = kwargs['device'] if 'device' in kwargs.keys() else torch.device('cpu')
         self.init_constant = kwargs['init_constant'] if 'init_constant' in kwargs.keys() else 6.
         self.quant = quant
+        self.binarize_inputs = kwargs['binarize_inputs'] if 'binarize_inputs' in kwargs.keys() else True
+        if self.binarize_inputs:
+            self.bn_inputs = kwargs['bn_inputs'] if 'bn_inputs' in kwargs.keys() else True
 
         if self.quant:
             # layer-specific initializations 
@@ -282,10 +285,10 @@ class QLSTM(nn.LSTM):
                 # add batchnorms
                 bn_gates = nn.BatchNorm1d(8)
                 bn_c = nn.BatchNorm1d(1)
-                
+            
                 bn_gates.bias.requires_grad_(False)
                 bn_c.bias.requires_grad_(False)
-                
+
                 self.add_module(f'bn_l{layer}', bn_gates)
                 self.add_module(f'bn_c_l{layer}', bn_c)
 
@@ -297,6 +300,14 @@ class QLSTM(nn.LSTM):
                 setattr(self, f'W0_ih_l{layer}', W0_ih)
                 setattr(self, f'W0_hh_l{layer}', W0_hh)
 
+                # batchnorm on inputs
+                if self.binarize_inputs and self.bn_inputs:    
+                    bn_a = nn.BatchNorm1d(1)
+                    bn_a.bias.requires_grad_(False)
+                    self.add_module(f'bn_a_l{layer}', bn_a)
+                    a0 = sqrt(self.init_constant / l_input_size) / 2
+                    setattr(self, f'a0_{layer}', a0)
+                
                 if self.bidirectional:
                     # add batchnorms
                     bn_gates_reverse = nn.BatchNorm1d(8)
@@ -358,42 +369,50 @@ class QLSTM(nn.LSTM):
                     hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
                     hidden_reverse = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
         
-        # init hidden states if not bidirectional
-        else:
-            if h_0 is not None:
-                hidden = (h_0[0][layer], h_0[1][layer]) if ((self.num_layers > 1) or (h_0[0].dim()==3)) else h_0
+            # init hidden states if not bidirectional
             else:
-                hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
+                if h_0 is not None:
+                    hidden = (h_0[0][layer], h_0[1][layer]) if ((self.num_layers > 1) or (h_0[0].dim()==3)) else h_0
+                else:
+                    hidden = 2*(torch.zeros(B, self.hidden_size, device=self.device),)
 
-        # loop through time steps
-        for t in range(T):
+            # binarize inputs
+            if self.binarize_inputs:
+                input = binarize(input, getattr(self, f"a0_l{layer}"), device=self.device)
+                print(f"binarized inputs: {input}")
+                if self.bn_inputs:
+                    input = getattr(self, f'bn_a_l{layer}')(input)
+                    print(f"normalized binarized inputs: {input}")
 
-            input_t = input[:, t, :] if self.batch_first else input[t]
-            hidden = qlstm_cell(input_t, hidden, *layer_params)
-            outputs.append(hidden[0])
+            # loop through time steps
+            for t in range(T):
 
-            if self.bidirectional:
-                input_t_reverse = input[:, -(t+1), :] if self.batch_first else input[-(t+1)]
-                hidden_reverse = qlstm_cell(input_t_reverse, hidden_reverse, *layer_params_reverse)
-                outputs_reverse = [hidden_reverse[0]] + outputs_reverse
-        
-        # all time-steps are done, end T loop
-        # -----------------------------------
-        h_t.append(hidden)
-        outputs = torch.stack(outputs, 1 if self.batch_first else 0)
+                input_t = input[:, t, :] if self.batch_first else input[t]
+                hidden = qlstm_cell(input_t, hidden, *layer_params)
+                outputs.append(hidden[0])
 
-        # reverse outputs
-        if self.bidirectional:
-            h_t.append(hidden_reverse)
-            # outputs_reverse is shape [B, T, H], we want input to be [B, T, 2*H]
-            outputs_reverse = torch.stack(outputs_reverse, 1 if self.batch_first else 0)
-            outputs = torch.cat((outputs, outputs_reverse), dim=-1)
+                if self.bidirectional:
+                    input_t_reverse = input[:, -(t+1), :] if self.batch_first else input[-(t+1)]
+                    hidden_reverse = qlstm_cell(input_t_reverse, hidden_reverse, *layer_params_reverse)
+                    outputs_reverse = [hidden_reverse[0]] + outputs_reverse
             
-        # prev hidden states as following layer's input      
-        input = outputs
-        
-        # h_t is [(h, c), (h, c), ...], we want to separate into lists [[h_0, h_1, ...], [c_0, c_1, ...]]
-        h_t, c_t = list(zip(*h_t))
-        h_t, c_t = torch.stack(h_t, 0), torch.stack(c_t, 0)
+            # all time-steps are done, end T loop
+            # -----------------------------------
+            h_t.append(hidden)
+            outputs = torch.stack(outputs, 1 if self.batch_first else 0)
 
-        return outputs, (h_t, c_t)
+            # reverse outputs
+            if self.bidirectional:
+                h_t.append(hidden_reverse)
+                # outputs_reverse is shape [B, T, H], we want input to be [B, T, 2*H]
+                outputs_reverse = torch.stack(outputs_reverse, 1 if self.batch_first else 0)
+                outputs = torch.cat((outputs, outputs_reverse), dim=-1)
+                
+            # prev hidden states as following layer's input      
+            input = outputs
+            
+            # h_t is [(h, c), (h, c), ...], we want to separate into lists [[h_0, h_1, ...], [c_0, c_1, ...]]
+            h_t, c_t = list(zip(*h_t))
+            h_t, c_t = torch.stack(h_t, 0), torch.stack(c_t, 0)
+
+            return outputs, (h_t, c_t)
