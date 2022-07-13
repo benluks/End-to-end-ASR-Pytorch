@@ -145,7 +145,6 @@ class ASR(nn.Module):
                     self.decoder.get_query(), encode_feature, encode_len)
                 # Decode (inputs context + embedded last character)
                 decoder_input = torch.cat([last_char, context], dim=-1)
-                print(f"decoder input shape: {decoder_input.shape}")
                 cur_char, d_state = self.decoder(decoder_input)
                 # Prepare output as input of next step
                 if (teacher is not None):
@@ -250,7 +249,6 @@ class Decoder(nn.Module):
         ''' Decode and transform into vocab '''
         if not self.training:
             self.layers.flatten_parameters()
-        print(f"decoder hidden state size: {self.hidden_state.shape}")
         x, self.hidden_state = self.layers(x.unsqueeze(1), self.hidden_state)
         x = x.squeeze(1)
         char = self.char_trans(self.final_dropout(x))
