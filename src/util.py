@@ -180,8 +180,8 @@ def binarize(W, W0, device):
 def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device, 
                bn_gates=nn.Identity(), bn_c=nn.Identity()):
 
-    print(f" shape of hidden in qlstm is: {hidden.shape}")
     hx, cx = hidden
+    print(f"shapes of hx and cx are: {hx.shape} and {cx.shape}, respectively")
     batch_size, hidden_size = hx.shape
     
     # gates: [B, 8*H] => [B, 8, H]
