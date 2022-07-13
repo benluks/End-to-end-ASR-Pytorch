@@ -145,6 +145,7 @@ class ASR(nn.Module):
                     self.decoder.get_query(), encode_feature, encode_len)
                 # Decode (inputs context + embedded last character)
                 decoder_input = torch.cat([last_char, context], dim=-1)
+                print(f"decoder input shape: {decoder_input.shape}")
                 cur_char, d_state = self.decoder(decoder_input)
                 # Prepare output as input of next step
                 if (teacher is not None):
