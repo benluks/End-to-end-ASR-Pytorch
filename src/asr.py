@@ -213,7 +213,7 @@ class Decoder(nn.Module):
 
         # Modules
         if module == 'QLSTM':
-            self.layers = QLSTM(input_size=input_dim, hidden_size=dim, dropout=dropout, device=self.device)
+            self.layers = QLSTM(input_size=input_dim, hidden_size=dim, dropout=dropout, batch_first=True, device=self.device)
         else:
             self.layers = getattr(nn, module)(
                 input_dim, dim, num_layers=layer, dropout=dropout, batch_first=True)
