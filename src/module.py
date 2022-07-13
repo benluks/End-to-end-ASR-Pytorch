@@ -276,7 +276,7 @@ class QLSTM(nn.LSTM):
         self.quant = quant
         self.binarize_inputs = kwargs['binarize_inputs'] if 'binarize_inputs' in kwargs.keys() else True
         if self.binarize_inputs:
-            self.bn_inputs = kwargs['bn_inputs'] if 'bn_inputs' in kwargs.keys() else True
+            self.bn_inputs = kwargs['bn_inputs'] if 'bn_inputs' in kwargs.keys() else False
 
         if self.quant:
             # layer-specific initializations 
