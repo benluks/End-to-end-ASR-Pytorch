@@ -306,7 +306,7 @@ class QLSTM(nn.LSTM):
                     bn_a.bias.requires_grad_(False)
                     self.add_module(f'bn_a_l{layer}', bn_a)
                     a0 = sqrt(self.init_constant / l_input_size) / 2
-                    setattr(self, f'a0_{layer}', a0)
+                    setattr(self, f'a0_l{layer}', a0)
                 
                 if self.bidirectional:
                     # add batchnorms
