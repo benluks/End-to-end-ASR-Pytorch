@@ -145,7 +145,14 @@ class ASR(nn.Module):
                     self.decoder.get_query(), encode_feature, encode_len)
                 # Decode (inputs context + embedded last character)
                 decoder_input = torch.cat([last_char, context], dim=-1)
-                print(f"decoder input shape: {decoder_input.shape}")
+                
+                # there is redundancy in QLSTM implementation: it iterates through time_steps
+                # if input, but this decoder implementation also iterates on training example at a time,
+                # so we have to unsqueeze the 0th dimension of `decoder_input` in order for the QLSTM to select
+                # the t_th/0th/only time step of decoder input
+                if isinstance(self.decoder.layers, QLSTM) and (len(decoder_input.shape) == 2):
+                    print(f"unsqueezing decoder input, shape is {decoder_input.shape}")
+                    decoder_input = decoder_input.unsqueeze(0)
                 cur_char, d_state = self.decoder(decoder_input)
                 # Prepare output as input of next step
                 if (teacher is not None):
