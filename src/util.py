@@ -184,6 +184,7 @@ def qlstm_cell(input, hidden, w_ih, w_hh, b_ih, b_hh, device,
     batch_size, hidden_size = hx.shape
     
     # gates: [B, 8*H] => [B, 8, H]
+    print(f"{input.shape}")
     temp = torch.mm(input, w_ih.t()) + b_ih, torch.mm(hx, w_hh.t()) + b_hh
     temp = torch.cat(temp, dim=1)
     gates = temp.view(batch_size, 8, hidden_size)
