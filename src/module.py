@@ -336,7 +336,6 @@ class QLSTM(nn.LSTM):
 
 
     def forward(self, input, h_0=None):
-        print(f"input shape at beginning of qlstm forwrd pass {input.shape}")
         T = input.size(0) if not self.batch_first else input.size(1)
         B = input.size(1) if not self.batch_first else input.size(0)
         
@@ -376,6 +375,7 @@ class QLSTM(nn.LSTM):
         # loop through time steps
         for t in range(T):
             # TODO: implement successive layer forward pass for bidirectionality
+            print(f"input shape at beginning of qlstm forwrd pass {input.shape}")
             input_t = input[:, t, :] if self.batch_first else input[t]
             hidden = qlstm_cell(input_t, hidden, *layer_params)
             outputs.append(hidden[0])
