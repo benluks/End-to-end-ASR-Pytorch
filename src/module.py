@@ -336,7 +336,7 @@ class QLSTM(nn.LSTM):
 
 
     def forward(self, input, h_0=None):
-
+        print(f"input shape at beginning of qlstm forwrd pass {input.shape}")
         T = input.size(0) if not self.batch_first else input.size(1)
         B = input.size(1) if not self.batch_first else input.size(0)
         
