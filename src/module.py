@@ -116,7 +116,7 @@ class RNNLayer(nn.Module):
             if module == 'QLSTM':
                 self.layer = QLSTM(input_size=input_dim, hidden_size=dim, num_layers=1, 
                                     batch_first=True, bias=False, bidirectional=bidirection, 
-                                    device=device, binarize_iputs=binarize_inputs, bn_inputs=bn_inputs)
+                                    device=device, binarize_inputs=binarize_inputs, bn_inputs=bn_inputs)
             else:
                 self.layer = getattr(nn, module.upper())(
                     input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
