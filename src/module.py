@@ -385,9 +385,7 @@ class QLSTM(nn.LSTM):
             # loop through time steps
             for t in range(T):
                 input_t = input[:, t, :] if self.batch_first else input[t]
-                if self.binarize_inputs and self.bn_inputs:
-                    input_t = getattr(self, f'bn_a_l{layer}')(input_t.unsqueeze(1)).squeeze(1)
-                    print(f"Here are the normalized inputs {input_t}")
+                print(f"Here are the inputs {input_t}")
                     # print(f"normalized binarized inputs: {input}")
                 hidden = qlstm_cell(input_t, hidden, *layer_params)
                 
