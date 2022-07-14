@@ -351,7 +351,7 @@ class Encoder(nn.Module):
     ''' Encoder (a.k.a. Listener in LAS)
         Encodes acoustic feature to latent representation, see config file for more details.'''
 
-    def __init__(self, input_size, prenet, module, bidirection, dim, dropout, layer_norm, proj, sample_rate, sample_style, device):
+    def __init__(self, input_size, prenet, module, bidirection, dim, dropout, layer_norm, proj, sample_rate, sample_style, device, binarize_inputs=True, bn_inputs=False):
         super(Encoder, self).__init__()
 
         # Hyper-parameters checking
@@ -389,7 +389,7 @@ class Encoder(nn.Module):
                                                 sample_rate=sample_rate[l], sample_style=sample_style, proj=proj[l], device=self.device))
                 else:
                     module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
-                                                sample_rate[l], sample_style, proj[l], device=self.device))
+                                                sample_rate[l], sample_style, proj[l], device=self.device, binarize_inputs=binarize_inputs, bn_inputs=bn_inputs))
                 input_dim = module_list[-1].out_dim
                 self.sample_rate = self.sample_rate*sample_rate[l]
         else:

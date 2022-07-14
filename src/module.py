@@ -95,7 +95,7 @@ class CNNExtractor(nn.Module):
 class RNNLayer(nn.Module):
     ''' RNN wrapper, includes time-downsampling'''
 
-    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, device):
+    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, device, binarize_inputs=True, bn_inputs=False):
         super(RNNLayer, self).__init__()
         # Setup
         rnn_out_dim = 2*dim if bidirection else dim
@@ -115,7 +115,8 @@ class RNNLayer(nn.Module):
         else:
             if module == 'QLSTM':
                 self.layer = QLSTM(input_size=input_dim, hidden_size=dim, num_layers=1, 
-                                    batch_first=True, bias=False, bidirectional=bidirection, device=device)
+                                    batch_first=True, bias=False, bidirectional=bidirection, 
+                                    device=device, binarize_iputs=binarize_inputs, bn_inputs=bn_inputs)
             else:
                 self.layer = getattr(nn, module.upper())(
                     input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
@@ -386,6 +387,7 @@ class QLSTM(nn.LSTM):
                 input_t = input[:, t, :] if self.batch_first else input[t]
                 if self.binarize_inputs and self.bn_inputs:
                     input_t = getattr(self, f'bn_a_l{layer}')(input_t)
+                    print("Here are the normalized inputs {input_t}")
                     # print(f"normalized binarized inputs: {input}")
                 hidden = qlstm_cell(input_t, hidden, *layer_params)
                 
