@@ -387,7 +387,7 @@ class QLSTM(nn.LSTM):
                 input_t = input[:, t, :] if self.batch_first else input[t]
                 if self.binarize_inputs and self.bn_inputs:
                     input_t = getattr(self, f'bn_a_l{layer}')(input_t)
-                    print("Here are the normalized inputs {input_t}")
+                    print(f"Here are the normalized inputs {input_t}")
                     # print(f"normalized binarized inputs: {input}")
                 hidden = qlstm_cell(input_t, hidden, *layer_params)
                 
