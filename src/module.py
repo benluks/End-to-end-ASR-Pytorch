@@ -116,7 +116,7 @@ class RNNLayer(nn.Module):
             if module == 'QLSTM':
                 self.layer = QLSTM(input_size=input_dim, hidden_size=dim, num_layers=1, 
                                     batch_first=True, bias=False, bidirectional=bidirection, 
-                                    device=device, binarize_inputs=binarize_inputs, bn_inputs=bn_inputs)
+                                    device=device)
             else:
                 self.layer = getattr(nn, module.upper())(
                     input_dim, dim, bidirectional=bidirection, num_layers=1, batch_first=True)
@@ -277,7 +277,7 @@ class QLSTM(nn.LSTM):
         self.quant = quant
         self.binarize_inputs = kwargs['binarize_inputs'] if 'binarize_inputs' in kwargs.keys() else True
         if self.binarize_inputs:
-            self.bn_inputs = kwargs['bn_inputs'] if 'bn_inputs' in kwargs.keys() else False
+            self.bn_inputs = kwargs['bn_inputs'] if 'bn_inputs' in kwargs.keys() else True
 
         if self.quant:
             # layer-specific initializations 
