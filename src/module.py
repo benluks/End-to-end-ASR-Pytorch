@@ -305,7 +305,7 @@ class QLSTM(nn.LSTM):
                     a0 = sqrt(self.init_constant / l_input_size) / 2
                     setattr(self, f'a0_l{layer}', a0)
                     if self.bn_inputs:
-                        bn_a = nn.LayerNorm(self.input_size)
+                        bn_a = nn.BatchNorm1d(self.input_size)
                         bn_a.bias.requires_grad_(False)
                         self.add_module(f'bn_a_l{layer}', bn_a)
                     
@@ -380,15 +380,13 @@ class QLSTM(nn.LSTM):
             # binarize inputs
             if self.binarize_inputs:
                 input = binarize(input, getattr(self, f"a0_l{layer}"), device=self.device)
-                print(f"binarized activations: {input}, {input.shape}")
-                if self.bn_inputs:
-                    input = getattr(self, f'bn_a_l{layer}')(input.unsqueeze(1)).squeeze(1)
-                    print(f"normalized binarized inputs: {input}")
 
             # loop through time steps
             for t in range(T):
-
                 input_t = input[:, t, :] if self.batch_first else input[t]
+                if self.binarize_inputs and self.bn_inputs:
+                    input_t = getattr(self, f'bn_a_l{layer}')(input_t)
+                    # print(f"normalized binarized inputs: {input}")
                 hidden = qlstm_cell(input_t, hidden, *layer_params)
                 
                 # maybe binarize hidden activations too
