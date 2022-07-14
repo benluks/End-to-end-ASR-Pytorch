@@ -385,8 +385,8 @@ class Encoder(nn.Module):
             for l in range(num_layers):
                 if module=='QLSTM' and l==0:
                     # make 1st layer LSTM if QLSTM
-                    module_list.append(RNNLayer(input_dim, 'LSTM', dim[l], bidirection, dropout[l], layer_norm[l],
-                                                sample_rate[l], sample_style, proj[l], device=self.device))
+                    module_list.append(RNNLayer(input_dim, 'LSTM', dim[l], bidirection, dropout[l], layer_norm=True,
+                                                sample_rate=sample_rate[l], sample_style=sample_style, proj=proj[l], device=self.device))
                 else:
                     module_list.append(RNNLayer(input_dim, module, dim[l], bidirection, dropout[l], layer_norm[l],
                                                 sample_rate[l], sample_style, proj[l], device=self.device))
