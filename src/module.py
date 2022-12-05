@@ -95,7 +95,9 @@ class CNNExtractor(nn.Module):
 class RNNLayer(nn.Module):
     ''' RNN wrapper, includes time-downsampling'''
 
-    def __init__(self, input_dim, module, dim, bidirection, dropout, layer_norm, sample_rate, sample_style, proj, device, binarize_inputs=True, bn_inputs=False):
+    def __init__(self, input_dim, module, dim, bidirection, dropout, 
+                layer_norm, sample_rate, sample_style, proj, device, 
+                binarize_inputs=True, bn_inputs=False):
         super(RNNLayer, self).__init__()
         # Setup
         rnn_out_dim = 2*dim if bidirection else dim
@@ -116,6 +118,7 @@ class RNNLayer(nn.Module):
             if module == 'QLSTM':
                 self.layer = QLSTM(input_size=input_dim, hidden_size=dim, num_layers=1, 
                                     batch_first=True, bias=False, bidirectional=bidirection, 
+                                    binarize_inputs=binarize_inputs, bn_inputs=bn_inputs,
                                     device=device)
             else:
                 self.layer = getattr(nn, module.upper())(
@@ -269,15 +272,15 @@ class LocationAwareAttention(BaseAttention):
 
 class QLSTM(nn.LSTM):
 
-    def __init__(self, *args, quant='bin', **kwargs):
+    def __init__(self, *args, quant='bin', binarize_inputs=True, bn_inputs=False, **kwargs):
 
         super().__init__(**kwargs)
         self.device = kwargs['device'] if 'device' in kwargs.keys() else torch.device('cpu')
         self.init_constant = kwargs['init_constant'] if 'init_constant' in kwargs.keys() else 6.
         self.quant = quant
-        self.binarize_inputs = kwargs['binarize_inputs'] if 'binarize_inputs' in kwargs.keys() else True
+        self.binarize_inputs = binarize_inputs
         if self.binarize_inputs:
-            self.bn_inputs = kwargs['bn_inputs'] if 'bn_inputs' in kwargs.keys() else True
+            self.bn_inputs = bn_inputs
 
         if self.quant:
             # layer-specific initializations 
@@ -417,3 +420,5 @@ class QLSTM(nn.LSTM):
             h_t, c_t = torch.stack(h_t, 0), torch.stack(c_t, 0)
 
             return outputs, (h_t, c_t)
+
+

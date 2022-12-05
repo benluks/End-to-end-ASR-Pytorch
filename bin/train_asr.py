@@ -54,8 +54,13 @@ class Solver(BaseSolver):
         ''' Setup ASR model and optimizer '''
         # Model
         init_adadelta = self.config['hparas']['optimizer'] == 'Adadelta'
-        self.model = ASR(self.feat_dim, self.vocab_size, init_adadelta, device=self.device, **
-                         self.config['model']).to(self.device)
+        self.model = ASR(
+            self.feat_dim, 
+            self.vocab_size, 
+            init_adadelta, 
+            device=self.device,
+            **self.config['model']
+            ).to(self.device)
         self.verbose(self.model.create_msg())
         model_paras = [{'params': self.model.parameters()}]
 
